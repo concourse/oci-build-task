@@ -1,0 +1,22 @@
+---
+platform: linux
+
+image_resource:
+  type: registry-image
+  source: {repository: concourse/builder}
+
+params:
+  REPOSITORY: concourse/builder
+  TAG: latest
+  CONTEXT: builder
+
+inputs:
+- name: builder
+
+outputs:
+- name: image
+
+caches:
+- path: cache
+
+run: {path: build}
