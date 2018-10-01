@@ -65,6 +65,6 @@ This repo contains an `example.yml`, which builds the image for the builder
 itself:
 
 ```sh
-fly -t dev execute -c example.yml -o image=.
+fly -t dev execute -c example.yml -o image=. -p
 docker load -i image.tar
 ```
