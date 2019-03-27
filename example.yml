@@ -3,10 +3,10 @@ platform: linux
 
 image_resource:
   type: registry-image
-  source: {repository: concourse/builder}
+  source: {repository: concourse/builder-task}
 
 params:
-  REPOSITORY: concourse/builder
+  REPOSITORY: concourse/builder-task
   TAG: latest
   CONTEXT: builder
 

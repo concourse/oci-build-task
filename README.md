@@ -19,14 +19,15 @@ have to document what you need to set here.
 
 ### `image`
 
-The task's image should refer to `concourse/builder`. You can either configure
-this via `image_resource` or pull it in as part of your pipeline.
+The task's image should refer to `concourse/builder-task`. You can either
+configure this via `image_resource` or pull it in as part of your pipeline.
 
 ### `params`
 
 The following params are required:
 
-* `$REPOSITORY`: the repository to name the image, e.g. `concourse/builder`.
+* `$REPOSITORY`: the repository to name the image, e.g.
+  `concourse/builder-task`.
 
 The following are optional:
 
