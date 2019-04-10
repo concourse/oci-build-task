@@ -39,6 +39,10 @@ The following are optional:
 * `$DOCKERFILE` (default `$CONTEXT/Dockerfile`): the path to the `Dockerfile`
   to build.
 
+* `$BUILD_ARG_*` (default empty): Params that start with `BUILD_ARG_` will be
+  translated to `--build-arg` options. For example `BUILD_ARG_foo=bar`, will become
+  `--build-arg foo=bar`
+
 ### `inputs`
 
 There are no required inputs - your task should just list each artifact it
