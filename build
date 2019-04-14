@@ -67,6 +67,7 @@ TAG=${TAG:-latest}
 TAG_FILE=${TAG_FILE:-}
 CONTEXT=${CONTEXT:-.}
 DOCKERFILE=${DOCKERFILE:-$CONTEXT/Dockerfile}
+TARGET_OPT=$([[ ! -z "$TARGET" ]] && echo "--target $TARGET" || echo "")
 BUILD_ARGS_OPT=$(env | awk '/BUILD_ARG_/ {gsub(/BUILD_ARG_/, "--build-arg "); printf "%s ",$0}')
 BUILD_ARGS_FILE=${BUILD_ARGS_FILE:-}
 
@@ -113,7 +114,7 @@ if [ -e ./cache/whiteouts ]; then
 fi
 
 progress "building"
-img build -s /scratch/state -t $REPOSITORY:$tag_name -f $DOCKERFILE $build_args $CONTEXT
+img build -s /scratch/state -t $REPOSITORY:$tag_name -f $DOCKERFILE $TARGET_OPT $build_args $CONTEXT
 
 if [ -d ./cache ]; then
   progress "syncing state to cache"
