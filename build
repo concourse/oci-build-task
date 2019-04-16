@@ -64,9 +64,41 @@ function progress() {
 }
 
 TAG=${TAG:-latest}
+TAG_FILE=${TAG_FILE}
 CONTEXT=${CONTEXT:-.}
 DOCKERFILE=${DOCKERFILE:-$CONTEXT/Dockerfile}
 BUILD_ARGS_OPT=$(env | awk '/BUILD_ARG_/ {gsub(/BUILD_ARG_/, "--build-arg "); printf "%s ",$0}')
+BUILD_ARGS_FILE="${BUILD_ARGS_FILE}"
+
+tag_name=""
+if [ -n "$TAG_FILE" ]; then
+  if [ ! -f "$TAG_FILE" ]; then
+    echo "tag file '$TAG_FILE' does not exist"
+    exit 1
+  fi
+  tag_name="$(cat $TAG_FILE)"
+else
+  tag_name="$TAG"
+fi
+
+build_args=""
+if [ -n "$BUILD_ARGS_FILE" ]; then
+  if [ ! -f "$BUILD_ARGS_FILE" ]; then
+    echo "build_args file '$BUILD_ARGS_FILE' does not exist"
+    exit 1
+  fi
+
+  expanded_build_args=()
+  while IFS= read -r line;
+  do
+    expanded_build_args+=("--build-arg")
+    expanded_build_args+=("${line}")
+  done < $BUILD_ARGS_FILE
+  build_args="${expanded_build_args[@]}"
+else
+  build_args="$BUILD_ARGS_OPT"
+fi
+
 
 if [ -d ./cache/state ]; then
   progress "syncing cache to state"
@@ -81,7 +113,7 @@ if [ -e ./cache/whiteouts ]; then
 fi
 
 progress "building"
-img build -s /scratch/state -t $REPOSITORY:$TAG -f $DOCKERFILE $BUILD_ARGS_OPT $CONTEXT
+img build -s /scratch/state -t $REPOSITORY:$tag_name -f $DOCKERFILE $build_args $CONTEXT
 
 if [ -d ./cache ]; then
   progress "syncing state to cache"
@@ -102,4 +134,4 @@ if [ -d ./cache ]; then
 fi
 
 progress "saving image"
-img save -s /scratch/state -o image/image.tar $REPOSITORY:$TAG
+img save -s /scratch/state -o image/image.tar $REPOSITORY:$tag_name

@@ -33,6 +33,8 @@ The following are optional:
 
 * `$TAG` (default `latest`): the tag to apply to the image.
 
+* `$TAG_FILE` (default empty): the tag should be a path to a file containing the name of the tag.
+
 * `$CONTEXT` (default `.`): the path to the directory to build. This should
   refer to one of the inputs.
 
@@ -42,6 +44,15 @@ The following are optional:
 * `$BUILD_ARG_*` (default empty): Params that start with `BUILD_ARG_` will be
   translated to `--build-arg` options. For example `BUILD_ARG_foo=bar`, will become
   `--build-arg foo=bar`
+
+* `$BUILD_ARGS_FILE` (default empty): path to a file containing Docker build-time variables.
+
+  Example file contents:
+  ```
+  EMAIL=me@yopmail.com
+  HOW_MANY_THINGS=1
+  DO_THING=false
+  ```
 
 ### `inputs`
 
