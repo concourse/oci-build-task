@@ -104,7 +104,7 @@ fi
 progress "saving image"
 img save -s /scratch/state -o image/image.tar $REPOSITORY:$TAG
 
-if [ -n "$UNPACK_ROOTFS" ]; then
+if [ -n "${UNPACK_ROOTFS:-}" ]; then
   progress "unpacking rootfs"
   imageConfig=$(tar -Oxf image/image.tar manifest.json | jq -r '.[0].Config')
   tar -Oxf image/image.tar $imageConfig | jq '{"user":.config.User,"env":.config.Env}' > image/metadata.json
