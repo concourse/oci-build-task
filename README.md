@@ -54,6 +54,12 @@ The following are optional:
   DO_THING=false
   ```
 
+* `$UNPACK_ROOTFS` (default empty): If set to a non-empty value a `metadata.json`
+  and `rootfs` folder will be created in the output directory in addition to the 
+  image tarball. This can be used to start the image in a subsequent task without
+  uploading it to a registry using the ["image:" task step option](https://concourse-ci.org/task-step.html#task-step-image).
+
+
 ### `inputs`
 
 There are no required inputs - your task should just list each artifact it
