@@ -67,8 +67,11 @@ TAG=${TAG:-latest}
 TAG_FILE=${TAG_FILE:-}
 CONTEXT=${CONTEXT:-.}
 DOCKERFILE=${DOCKERFILE:-$CONTEXT/Dockerfile}
+TARGET=${TARGET:-}
+TARGET_FILE=${TARGET_FILE:-}
 BUILD_ARGS_OPT=$(env | awk '/BUILD_ARG_/ {gsub(/BUILD_ARG_/, "--build-arg "); printf "%s ",$0}')
 BUILD_ARGS_FILE=${BUILD_ARGS_FILE:-}
+
 
 tag_name=""
 if [ -n "$TAG_FILE" ]; then
@@ -80,6 +83,19 @@ if [ -n "$TAG_FILE" ]; then
 else
   tag_name="$TAG"
 fi
+
+
+target_arg=""
+if [ -n "$TARGET_FILE" ]; then
+  if [ ! -f "$TARGET_FILE" ]; then
+    echo "target file '$TARGET_FILE' does not exist"
+    exit 1
+  fi
+  target_arg="--target $(cat $TARGET_FILE)"
+elif [ -n "$TARGET" ]; then
+  target_arg="--target $TARGET"
+fi
+
 
 build_args=""
 if [ -n "$BUILD_ARGS_FILE" ]; then
@@ -113,7 +129,7 @@ if [ -e ./cache/whiteouts ]; then
 fi
 
 progress "building"
-img build -s /scratch/state -t $REPOSITORY:$tag_name -f $DOCKERFILE $build_args $CONTEXT
+img build -s /scratch/state -t $REPOSITORY:$tag_name -f $DOCKERFILE $target_arg $build_args $CONTEXT
 
 if [ -d ./cache ]; then
   progress "syncing state to cache"
