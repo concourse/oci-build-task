@@ -59,7 +59,9 @@ The following are optional:
   image tarball. This can be used to start the image in a subsequent task without
   uploading it to a registry using the ["image:" task step option](https://concourse-ci.org/task-step.html#task-step-image).
 
-* `$TARGET` (default empty): Set the target build stage to build.
+* `$TARGET` (default empty): the target build stage to build.
+
+* `$TARGET_FILE` (default empty): the path to a file containing the name of the target build stage to build.
 
 ### `inputs`
 
