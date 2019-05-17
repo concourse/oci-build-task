@@ -54,11 +54,6 @@ The following are optional:
   DO_THING=false
   ```
 
-* `$UNPACK_ROOTFS` (default empty): If set to a non-empty value a `metadata.json`
-  and `rootfs` folder will be created in the output directory in addition to the 
-  image tarball. This can be used to start the image in a subsequent task without
-  uploading it to a registry using the ["image:" task step option](https://concourse-ci.org/task-step.html#task-step-image).
-
 * `$TARGET` (default empty): the target build stage to build.
 
 * `$TARGET_FILE` (default empty): the path to a file containing the name of the target build stage to build.
@@ -74,6 +69,10 @@ Your task may configure an output called `image`. The saved image tarball will
 be written to `image.tar` within the output. This tarball can be passed along
 to `docker load`, or uploaded to a registry using the [Registry Image
 resource](https://github.com/concourse/registry-image-resource#out-push-an-image-up-to-the-registry-under-the-given-tags).
+
+Your task may configure an output called `rootfs`. A `metadata.json` and `rootfs` subfolder will
+be created in the output. This can be used to start the image in a subsequent task without
+uploading it to a registry using the ["image" task step option](https://concourse-ci.org/task-step.html#task-step-image).
 
 ### `caches`
 
