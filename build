@@ -157,7 +157,7 @@ if [ -d ./rootfs ]; then
   imageConfig=$(tar -Oxf image/image.tar manifest.json | jq -r '.[0].Config')
   tar -Oxf image/image.tar $imageConfig | jq '{"user":.config.User,"env":.config.Env}' > ./rootfs/metadata.json
   RUNC_PATH=$(echo /tmp/img-runc*) # Can be removed once this is fixed https://github.com/genuinetools/img/issues/233
-  PATH=$RUNC_PATH:$PATH img unpack -s /scratch/state -o /scratch/rootfs $REPOSITORY:$TAG
+  PATH=$RUNC_PATH:$PATH img unpack -s /scratch/state -o /scratch/rootfs $REPOSITORY:$tag_name
   # unpacking to a btrfs backed baggageclaim volume directly hangs, so we unpack to /scratch and copy
   rsync -a /scratch/rootfs/ ./rootfs/rootfs
 fi
