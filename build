@@ -129,7 +129,7 @@ if [ -e ./cache/whiteouts ]; then
 fi
 
 progress "building"
-img build -s /scratch/state -t $REPOSITORY:$tag_name -f $DOCKERFILE $target_arg $build_args $CONTEXT
+img build --no-console -s /scratch/state -t $REPOSITORY:$tag_name -f $DOCKERFILE $target_arg $build_args $CONTEXT
 
 if [ -d ./cache ]; then
   progress "syncing state to cache"
