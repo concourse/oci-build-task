@@ -8,10 +8,10 @@ image_resource:
 params:
   REPOSITORY: concourse/builder-task
   TAG: latest
-  CONTEXT: builder
+  CONTEXT: builder-task
 
 inputs:
-- name: builder
+- name: builder-task
 
 outputs:
 - name: image
@@ -19,4 +19,4 @@ outputs:
 caches:
 - path: cache
 
-run: {path: build}
+run: {path: builder-task/build}
