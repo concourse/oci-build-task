@@ -2,6 +2,11 @@
 
 set -e -u
 
+if ! [ -d ./image ] && ! [ -d ./rootfs ]; then
+  echo "at least one output 'image' or 'rootfs' must be specified"
+  exit 1
+fi
+
 function sanitize_cgroups() {
   mkdir -p /sys/fs/cgroup
   mountpoint -q /sys/fs/cgroup || \
@@ -149,6 +154,7 @@ if [ -d ./cache ]; then
   rsync -a /scratch/state/ ./cache/state
 fi
 
+mkdir -p image
 progress "saving image"
 img save -s /scratch/state -o image/image.tar $REPOSITORY:$tag_name
 
