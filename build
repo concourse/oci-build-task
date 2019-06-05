@@ -2,11 +2,6 @@
 
 set -e -u
 
-if ! [ -d ./image ] && ! [ -d ./rootfs ]; then
-  echo "at least one output 'image' or 'rootfs' must be specified"
-  exit 1
-fi
-
 function sanitize_cgroups() {
   mkdir -p /sys/fs/cgroup
   mountpoint -q /sys/fs/cgroup || \
@@ -152,6 +147,11 @@ if [ -d ./cache ]; then
   done
 
   rsync -a /scratch/state/ ./cache/state
+fi
+
+if ! [ -d ./image ] && ! [ -d ./rootfs ]; then
+  echo "neither 'image' nor 'rootfs' are specified, finishing with no outputs"
+  exit 0
 fi
 
 mkdir -p image
