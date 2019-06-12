@@ -149,6 +149,12 @@ if [ -d ./cache ]; then
   rsync -a /scratch/state/ ./cache/state
 fi
 
+if ! [ -d ./image ] && ! [ -d ./rootfs ]; then
+  echo "neither 'image' nor 'rootfs' are specified, finishing with no outputs"
+  exit 0
+fi
+
+mkdir -p image
 progress "saving image"
 img save -s /scratch/state -o image/image.tar $REPOSITORY:$tag_name
 
