@@ -107,8 +107,10 @@ if [ -n "$BUILD_ARGS_FILE" ]; then
   expanded_build_args=()
   while IFS= read -r line || [ -n "$line" ];
   do
-    expanded_build_args+=("--build-arg")
-    expanded_build_args+=("${line}")
+    if [[ ! -z "$line" ]]; then
+      expanded_build_args+=("--build-arg")
+      expanded_build_args+=("${line}")
+    fi
   done < $BUILD_ARGS_FILE
   build_args="${expanded_build_args[@]}"
 else
