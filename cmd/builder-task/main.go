@@ -85,7 +85,13 @@ func main() {
 
 	if cfg.Target != "" {
 		buildctlArgs = append(buildctlArgs,
-			"--opt target="+cfg.Target,
+			"--opt", "target="+cfg.Target,
+		)
+	}
+
+	for _, arg := range cfg.BuildArgs {
+		buildctlArgs = append(buildctlArgs,
+			"--build-arg", arg,
 		)
 	}
 
@@ -124,6 +130,15 @@ func sanitize(cfg *task.Config) {
 
 	if cfg.OutputType == "" {
 		cfg.OutputType = "docker"
+	}
+
+	if cfg.BuildArgsFile != "" {
+		buildArgs, err := ioutil.ReadFile(cfg.BuildArgsFile)
+		failIf("read build args file", err)
+
+		for _, arg := range strings.Split(string(buildArgs), "\n") {
+			cfg.BuildArgs = append(cfg.BuildArgs, arg)
+		}
 	}
 }
 

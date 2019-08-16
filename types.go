@@ -56,4 +56,7 @@ type Config struct {
 	TargetFile string `json:"target_file" envconfig:"optional"`
 
 	OutputType string `json:"output_type" envconfig:"optional"`
+
+	BuildArgs     []string `json:"build_args"      envconfig:"optional"`
+	BuildArgsFile string   `json:"build_args_file" envconfig:"optional"`
 }
