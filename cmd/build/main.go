@@ -134,6 +134,8 @@ func sanitize(cfg *Config) {
 		failIf("read target file", err)
 
 		cfg.Tag = strings.TrimSpace(string(target))
+	} else if cfg.Tag == "" {
+		cfg.Tag = "latest"
 	}
 
 	if cfg.TargetFile != "" {
