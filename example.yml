@@ -6,10 +6,9 @@ image_resource:
   source: {repository: vito/buildkit-task}
 
 params:
-  CONFIG:
-    repository: concourse/builder-task
-    tag: latest
-    context: builder-task
+  REPOSITORY: concourse/builder-task
+  TAG: latest
+  CONTEXT: builder-task
 
 inputs:
 - name: builder-task
@@ -20,9 +19,4 @@ outputs:
 caches:
 - path: cache
 
-run:
-  path: sh
-  args:
-  - -ec
-  - |
-    echo '{"response_path":"/dev/stderr","config":'$CONFIG'}' | builder-task
+run: {path: build}
