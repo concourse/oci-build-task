@@ -24,5 +24,4 @@ run:
   args:
   - -ec
   - |
-    stty columns 80
     echo '{"response_path":"/dev/stderr","config":{"repository":"'$REPOSITORY'","context":"'$CONTEXT'"}}' | builder-task

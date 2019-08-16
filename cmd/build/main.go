@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
+	"github.com/u-root/u-root/pkg/termios"
 )
 
 const buildkitExitTimeout = 10 * time.Second
@@ -46,6 +47,18 @@ func main() {
 
 	res := Response{
 		Outputs: []string{"image", "cache"},
+	}
+
+	// limit max columns; Concourse sets a super high value and buildctl happily
+	// fills the whole screen with whitespace
+	ws, err := termios.GetWinSize(os.Stdout.Fd())
+	if err == nil {
+		ws.Col = 80
+
+		err = termios.SetWinSize(os.Stdout.Fd(), ws)
+		if err != nil {
+			logrus.Warn("failed to set window size:", err)
+		}
 	}
 
 	responseFile, err := os.Create(req.ResponsePath)
