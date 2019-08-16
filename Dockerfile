@@ -1,6 +1,20 @@
-FROM jess/img:v0.5.7
-USER root
-ENV USER root
-ENV HOME /root
-RUN apk add bash rsync jq
-ADD build /usr/bin/build
+# syntax = docker/dockerfile:experimental
+
+FROM concourse/golang-builder AS builder
+  WORKDIR /src
+  ENV CGO_ENABLED 0
+  COPY go.mod /src/go.mod
+  COPY go.sum /src/go.sum
+  RUN --mount=type=cache,target=/root/.cache/go-build go get -d ./...
+  COPY . /src
+  RUN go build -o /assets/builder-task ./cmd/build
+  RUN set -e; for pkg in $(go list ./...); do \
+        go test -o "/tests/$(basename $pkg).test" -c $pkg; \
+      done
+
+FROM moby/buildkit AS task
+  COPY --from=builder /assets/builder-task /usr/bin/
+  COPY bin/setup-cgroups /usr/bin/
+  ENTRYPOINT ["builder-task"]
+
+FROM task

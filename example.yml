@@ -3,7 +3,7 @@ platform: linux
 
 image_resource:
   type: registry-image
-  source: {repository: concourse/builder-task}
+  source: {repository: vito/buildkit-task}
 
 params:
   REPOSITORY: concourse/builder-task
@@ -19,4 +19,10 @@ outputs:
 caches:
 - path: cache
 
-run: {path: builder-task/build}
+run:
+  path: sh
+  args:
+  - -ec
+  - |
+    stty columns 80
+    echo '{"response_path":"/dev/stderr","config":{"repository":"'$REPOSITORY'","context":"'$CONTEXT'"}}' | builder-task
