@@ -76,17 +76,21 @@ func main() {
 
 	addr := spawnBuildkitd("/var/log/buildkitd.log")
 
+	dockerfileDir := filepath.Dir(cfg.DockerfilePath)
+	dockerfileName := filepath.Base(cfg.DockerfilePath)
+
 	buildctlArgs := []string{
 		"build",
 		"--frontend", "dockerfile.v0",
 		"--local", "context=" + cfg.ContextPath,
-		"--local", "dockerfile=" + cfg.DockerfilePath,
+		"--local", "dockerfile=" + dockerfileDir,
+		"--frontend-opt", "filename=" + dockerfileName,
 		"--export-cache", "type=local,mode=min,dest=cache",
 	}
 
 	if _, err := os.Stat(filepath.Join(cacheDir, "index.json")); err == nil {
 		buildctlArgs = append(buildctlArgs,
-			"--import-cache", "type=local,src=cache",
+			"--import-cache", "type=local,src="+cacheDir,
 		)
 	}
 
@@ -220,7 +224,7 @@ func sanitize(cfg *task.Config) {
 	}
 
 	if cfg.DockerfilePath == "" {
-		cfg.DockerfilePath = cfg.ContextPath
+		cfg.DockerfilePath = filepath.Join(cfg.ContextPath, "Dockerfile")
 	}
 
 	if cfg.TagFile != "" {
