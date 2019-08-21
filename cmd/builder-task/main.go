@@ -23,6 +23,10 @@ func main() {
 	err := json.NewDecoder(os.Stdin).Decode(&req)
 	failIf("read request", err)
 
+	if req.Config.Debug {
+		logrus.SetLevel(logrus.DebugLevel)
+	}
+
 	rootPath, err := os.Getwd()
 	failIf("get root path", err)
 

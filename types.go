@@ -44,6 +44,8 @@ type Response struct {
 // For now, and for backwards-compatibility, we will also support taking values
 // from task params (i.e. env), hence the use of `envconfig:`.
 type Config struct {
+	Debug bool `json:"debug" envconfig:"optional"`
+
 	Repository string `json:"repository"`
 
 	Tag     string `json:"tag"`
