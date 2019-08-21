@@ -138,10 +138,6 @@ func sanitize(cfg *task.Config) {
 		cfg.Target = strings.TrimSpace(string(target))
 	}
 
-	if cfg.OutputType == "" {
-		cfg.OutputType = "docker"
-	}
-
 	if cfg.BuildArgsFile != "" {
 		buildArgs, err := ioutil.ReadFile(cfg.BuildArgsFile)
 		failIf("read build args file", err)
