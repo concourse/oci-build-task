@@ -3,8 +3,20 @@ module github.com/concourse/builder-task
 go 1.12
 
 require (
+	github.com/VividCortex/ewma v1.1.1 // indirect
+	github.com/concourse/go-archive v1.0.1
+	github.com/fatih/color v1.7.0
+	github.com/google/go-cmp v0.3.1 // indirect
+	github.com/google/go-containerregistry v0.0.0-20190820205713-31e00cede111
+	github.com/mattn/go-colorable v0.1.2 // indirect
+	github.com/mattn/go-isatty v0.0.9 // indirect
+	github.com/onsi/ginkgo v1.9.0 // indirect
+	github.com/onsi/gomega v1.6.0 // indirect
+	github.com/opencontainers/go-digest v1.0.0-rc1 // indirect
+	github.com/opencontainers/image-spec v1.0.1
 	github.com/sirupsen/logrus v1.4.2
 	github.com/u-root/u-root v6.0.0+incompatible
+	github.com/vbauerster/mpb v3.4.0+incompatible
 	github.com/vrischmann/envconfig v1.2.0
-	golang.org/x/sys v0.0.0-20190813064441-fde4db37ae7a // indirect
+	golang.org/x/crypto v0.0.0-20190820162420-60c769a6c586 // indirect
 )

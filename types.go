@@ -59,8 +59,20 @@ type Config struct {
 
 	BuildArgs     []string `json:"build_args"      envconfig:"optional"`
 	BuildArgsFile string   `json:"build_args_file" envconfig:"optional"`
+
+	// Unpack the OCI image into Concourse's rootfs/ + metadata.json image scheme.
+	//
+	// Theoretically this would go away if/when we standardize on OCI.
+	UnpackRootfs bool `json:"unpack_rootfs" envconfig:"optional"`
 }
 
 func (cfg Config) ImageName() string {
 	return cfg.Repository + ":" + cfg.Tag
+}
+
+// ImageMetadata is the schema written to manifest.json when producing the
+// legacy Concourse image format (rootfs/..., metadata.json).
+type ImageMetadata struct {
+	Env  []string `json:"env"`
+	User string   `json:"user"`
 }

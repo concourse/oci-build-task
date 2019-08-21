@@ -9,11 +9,16 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"syscall"
 	"time"
 
 	task "github.com/concourse/builder-task"
+	"github.com/concourse/go-archive/tarfs"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/google/go-containerregistry/pkg/v1/layout"
+	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/sirupsen/logrus"
 	"github.com/u-root/u-root/pkg/termios"
 )
@@ -105,8 +110,104 @@ func main() {
 		)
 	}
 
+	logrus.WithFields(logrus.Fields{
+		"buildctl-args": buildctlArgs,
+	}).Debug("building")
+
 	err = buildctl(addr, os.Stdout, buildctlArgs...)
 	failIf("build", err)
+
+	if req.Config.UnpackRootfs {
+		unpackRootfs(imageDir, ociImagePath, cfg)
+	}
+}
+
+func unpackRootfs(dest string, ociImagePath string, cfg task.Config) {
+	layoutDir := filepath.Join(dest, "layout")
+	rootfsDir := filepath.Join(dest, "rootfs")
+	manifestPath := filepath.Join(dest, "manifest.json")
+
+	logrus.Debug("unpacking oci layout")
+
+	tarFile, err := os.Open(ociImagePath)
+	failIf("open oci archive", err)
+
+	err = tarfs.Extract(tarFile, layoutDir)
+	failIf("unpack oci archive", err)
+
+	err = tarFile.Close()
+	failIf("close oci archive", err)
+
+	imageIndex, err := layout.ImageIndexFromPath(layoutDir)
+	failIf("load image layout", err)
+
+	manifest, err := imageIndex.IndexManifest()
+	failIf("get index manifest", err)
+
+	var unpacked string
+	for _, m := range manifest.Manifests {
+		if m.Platform != nil {
+			if m.Platform.OS != runtime.GOOS || m.Platform.Architecture != runtime.GOARCH {
+				continue
+			}
+		}
+
+		if m.Annotations != nil && m.Annotations[ocispec.AnnotationRefName] != cfg.Tag {
+			continue
+		}
+
+		if unpacked != "" {
+			logrus.WithFields(logrus.Fields{
+				"digest":           m.Digest,
+				"already-unpacked": unpacked,
+			}).Fatalln("found another image to unpack after already unpacking one")
+		}
+
+		logrus.WithFields(logrus.Fields{
+			"platform":    m.Platform,
+			"annotations": m.Annotations,
+			"digest":      m.Digest,
+		}).Debug("unpacking image")
+
+		image, err := imageIndex.Image(m.Digest)
+		failIf("get image from oci layout", err)
+
+		unpackImage(rootfsDir, image, false)
+		writeImageManifest(manifestPath, image)
+
+		unpacked = m.Digest.String()
+	}
+
+	if unpacked == "" {
+		logrus.Fatalln("could not determine image to unpack")
+	}
+}
+
+func writeImageManifest(manifestPath string, image v1.Image) {
+	cfg, err := image.ConfigFile()
+	failIf("load image config", err)
+
+	meta, err := os.Create(manifestPath)
+	failIf("create metadata file", err)
+
+	env := cfg.Config.Env
+	if len(env) == 0 {
+		env = cfg.ContainerConfig.Env
+	}
+
+	user := cfg.Config.User
+	if user == "" {
+		user = cfg.ContainerConfig.User
+	}
+
+	err = json.NewEncoder(meta).Encode(task.ImageMetadata{
+		Env:  env,
+		User: user,
+	})
+	failIf("encode metadata", err)
+
+	err = meta.Close()
+	failIf("close meta", err)
 }
 
 func sanitize(cfg *task.Config) {
