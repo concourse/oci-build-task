@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
@@ -22,9 +23,26 @@ func main() {
 	err := json.NewDecoder(os.Stdin).Decode(&req)
 	failIf("read request", err)
 
+	rootPath, err := os.Getwd()
+	failIf("get root path", err)
+
+	imageDir := filepath.Join(rootPath, "image")
+	cacheDir := filepath.Join(rootPath, "cache")
+
 	res := task.Response{
 		Outputs: []string{"image", "cache"},
 	}
+
+	responseFile, err := os.Create(req.ResponsePath)
+	failIf("open response path", err)
+
+	defer func() {
+		err := json.NewEncoder(responseFile).Encode(res)
+		failIf("write response", err)
+
+		err = responseFile.Close()
+		failIf("close response file", err)
+	}()
 
 	// limit max columns; Concourse sets a super high value and buildctl happily
 	// fills the whole screen with whitespace
@@ -38,22 +56,8 @@ func main() {
 		}
 	}
 
-	responseFile, err := os.Create(req.ResponsePath)
-	failIf("open response path", err)
-
-	err = os.MkdirAll("image", 0755)
+	err = os.MkdirAll(cacheDir, 0755)
 	failIf("create image output folder", err)
-
-	err = os.MkdirAll("cache", 0755)
-	failIf("create image output folder", err)
-
-	defer func() {
-		err := json.NewEncoder(responseFile).Encode(res)
-		failIf("write response", err)
-
-		err = responseFile.Close()
-		failIf("close response file", err)
-	}()
 
 	cfg := req.Config
 	sanitize(&cfg)
@@ -71,15 +75,17 @@ func main() {
 		"--export-cache", "type=local,mode=min,dest=cache",
 	}
 
-	if _, err := os.Stat("cache/index.json"); err == nil {
+	if _, err := os.Stat(filepath.Join(cacheDir, "index.json")); err == nil {
 		buildctlArgs = append(buildctlArgs,
 			"--import-cache", "type=local,src=cache",
 		)
 	}
 
-	if cfg.OutputType != "none" {
+	var ociImagePath string
+	if _, err := os.Stat(imageDir); err == nil {
+		ociImagePath = filepath.Join(imageDir, "image.tar")
 		buildctlArgs = append(buildctlArgs,
-			"--output", "type="+cfg.OutputType+",name="+cfg.Repository+",dest=image/image.tar",
+			"--output", "type=oci,name="+cfg.ImageName()+",dest="+ociImagePath,
 		)
 	}
 

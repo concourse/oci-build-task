@@ -55,8 +55,10 @@ type Config struct {
 	Target     string `json:"target"      envconfig:"optional"`
 	TargetFile string `json:"target_file" envconfig:"optional"`
 
-	OutputType string `json:"output_type" envconfig:"optional"`
-
 	BuildArgs     []string `json:"build_args"      envconfig:"optional"`
 	BuildArgsFile string   `json:"build_args_file" envconfig:"optional"`
+}
+
+func (cfg Config) ImageName() string {
+	return cfg.Repository + ":" + cfg.Tag
 }

@@ -13,7 +13,7 @@ FROM concourse/golang-builder AS builder
         go test -o "/tests/$(basename $pkg).test" -c $pkg; \
       done
 
-FROM moby/buildkit AS task
+FROM moby/buildkit:master AS task
   COPY --from=builder /assets/builder-task /usr/bin/
   COPY --from=builder /assets/build /usr/bin/
   COPY bin/setup-cgroups /usr/bin/
