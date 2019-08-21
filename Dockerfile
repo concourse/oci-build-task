@@ -17,6 +17,6 @@ FROM moby/buildkit AS task
   COPY --from=builder /assets/builder-task /usr/bin/
   COPY --from=builder /assets/build /usr/bin/
   COPY bin/setup-cgroups /usr/bin/
-  CMD ["builder-task"]
+  ENTRYPOINT ["builder-task"]
 
 FROM task
