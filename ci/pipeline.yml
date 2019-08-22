@@ -9,18 +9,21 @@ resources:
 - name: builder-task-image
   type: registry-image
   source:
-    repository: concourse/buildkit-task
-    tag: buildkit-spike
+    repository: concourse/builder-task
+    tag: buildkit
+    username: ((docker.username))
+    password: ((docker.password))
 
 jobs:
 - name: test
   plan:
   - get: builder-task
+    trigger: true
   - task: test
     privileged: true
     file: builder-task/ci/tasks/test.yml
 
-- name: build
+- name: publish
   plan:
   - get: builder-task
     passed: [test]
@@ -29,7 +32,5 @@ jobs:
   - task: build-image
     privileged: true
     file: builder-task/ci/tasks/build-image.yml
-
-  # TODO: this needs support for pushing OCI images
   - put: builder-task-image
     params: {image: image/image.tar}
