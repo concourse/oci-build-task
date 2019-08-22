@@ -1,6 +1,6 @@
 // taken verbatim from registry-image resource; extract common lib?
 
-package main
+package task
 
 import (
 	"archive/tar"
