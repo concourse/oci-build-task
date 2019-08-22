@@ -18,17 +18,6 @@ type TaskSuite struct {
 	req     task.Request
 }
 
-func (s *TaskSuite) SetupSuite() {
-	binDir, err := filepath.Abs("bin")
-	s.NoError(err)
-
-	// inject setup-cgroups and other utilities into the $PATH
-	//
-	// this is also a good place to install buildkitd/buildctl
-	err = os.Setenv("PATH", binDir+":"+os.Getenv("PATH"))
-	s.NoError(err)
-}
-
 func (s *TaskSuite) SetupTest() {
 	var err error
 	s.rootDir, err = ioutil.TempDir("", "builder-task-test")
