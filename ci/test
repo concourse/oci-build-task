@@ -1,0 +1,12 @@
+#!/bin/bash
+
+set -e -u
+
+cd $(dirname $0)/..
+
+stty columns 80
+
+apt update
+apt -y install uidmap
+
+./scripts/test
