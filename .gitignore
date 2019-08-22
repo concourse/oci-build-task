@@ -3,3 +3,6 @@ scripts/.tests
 bin/buildctl
 bin/buildkitd
 bin/buildkit-runc
+bin/rootlessctl
+bin/rootlesskit
+bin/rootlesskit-docker-proxy

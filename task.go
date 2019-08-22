@@ -18,7 +18,6 @@ import (
 	"github.com/concourse/go-archive/tarfs"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/layout"
-	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -78,7 +77,7 @@ func Build(rootPath string, req Request) (Response, error) {
 	if _, err := os.Stat(imageDir); err == nil {
 		ociImagePath = filepath.Join(imageDir, "image.tar")
 		buildctlArgs = append(buildctlArgs,
-			"--output", "type=oci,name="+cfg.ImageName()+",dest="+ociImagePath,
+			"--output", "type=oci,dest="+ociImagePath,
 		)
 	}
 
@@ -153,9 +152,12 @@ func unpackRootfs(dest string, ociImagePath string, cfg Config) error {
 			}
 		}
 
-		if m.Annotations != nil && m.Annotations[ocispec.AnnotationRefName] != cfg.Tag {
-			continue
-		}
+		// TODO: is this even a sensible approach?
+		//
+		// note: depends on newer buildkit with support for named oci output
+		// if m.Annotations != nil && m.Annotations[ocispec.AnnotationRefName] != cfg.Tag {
+		// 	continue
+		// }
 
 		if unpacked != "" {
 			logrus.WithFields(logrus.Fields{

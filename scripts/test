@@ -1,24 +1,29 @@
 #!/bin/bash
 
-set -e -u -x
+set -e -u
 
 cd $(dirname $0)/..
 
 if ! [ -e bin/buildctl ] || ! [ -e bin/buildkitd ]; then
-  dest=$(pwd)
-  pushd buildkit
-    make
-    make DESTDIR=$dest install
-  popd
+  BUILDKIT_VERSION=0.6.1
+  BUILDKIT_URL=https://github.com/moby/buildkit/releases/download/v$BUILDKIT_VERSION/buildkit-v$BUILDKIT_VERSION.linux-amd64.tar.gz
 
-  # once a new version of buildkit is out, remove the submodule and do the
-  # following instead
-  #
-  # BUILDKIT_VERSION=0.6.1
-  # BUILDKIT_URL=https://github.com/moby/buildkit/releases/download/v$BUILDKIT_VERSION/buildkit-v$BUILDKIT_VERSION.linux-amd64.tar.gz
-
-  # curl -fsSL "$BUILDKIT_URL" | tar zxf -
+  curl -fL "$BUILDKIT_URL" | tar zxf -
 fi
 
-go test -c -o scripts/.tests
-sudo scripts/.tests "$@"
+if [ "$(id -u)" != "0" ]; then
+  if ! which newuidmap >/dev/null || ! which newgidmap >/dev/null; then
+    echo "newuidmap and newgidmap must be installed"
+    exit 1
+  fi
+
+  if ! [ -e bin/rootlesskit ]; then
+    pushd rootlesskit
+      make
+    popd
+
+    cp rootlesskit/bin/* bin/
+  fi
+fi
+
+go test "$@"
