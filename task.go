@@ -21,7 +21,6 @@ import (
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"github.com/u-root/u-root/pkg/termios"
 )
 
 func Build(rootPath string, req Request) (Response, error) {
@@ -36,19 +35,7 @@ func Build(rootPath string, req Request) (Response, error) {
 		Outputs: []string{"image", "cache"},
 	}
 
-	// limit max columns; Concourse sets a super high value and buildctl happily
-	// fills the whole screen with whitespace
-	ws, err := termios.GetWinSize(os.Stdout.Fd())
-	if err == nil {
-		ws.Col = 80
-
-		err = termios.SetWinSize(os.Stdout.Fd(), ws)
-		if err != nil {
-			logrus.Warn("failed to set window size:", err)
-		}
-	}
-
-	err = os.MkdirAll(cacheDir, 0755)
+	err := os.MkdirAll(cacheDir, 0755)
 	if err != nil {
 		return Response{}, errors.Wrap(err, "create image output folder")
 	}

@@ -6,6 +6,7 @@ import (
 
 	task "github.com/concourse/builder-task"
 	"github.com/sirupsen/logrus"
+	"github.com/u-root/u-root/pkg/termios"
 )
 
 func main() {
@@ -15,6 +16,18 @@ func main() {
 
 	wd, err := os.Getwd()
 	failIf("get root path", err)
+
+	// limit max columns; Concourse sets a super high value and buildctl happily
+	// fills the whole screen with whitespace
+	ws, err := termios.GetWinSize(os.Stdout.Fd())
+	if err == nil {
+		ws.Col = 100
+
+		err = termios.SetWinSize(os.Stdout.Fd(), ws)
+		if err != nil {
+			logrus.Warn("failed to set window size:", err)
+		}
+	}
 
 	res, err := task.Build(wd, req)
 	failIf("failed to build", err)
