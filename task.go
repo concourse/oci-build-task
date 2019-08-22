@@ -35,9 +35,14 @@ func Build(rootPath string, req Request) (Response, error) {
 		Outputs: []string{"image", "cache"},
 	}
 
-	err := os.MkdirAll(cacheDir, 0755)
+	err := os.MkdirAll(imageDir, 0755)
 	if err != nil {
 		return Response{}, errors.Wrap(err, "create image output folder")
+	}
+
+	err = os.MkdirAll(cacheDir, 0755)
+	if err != nil {
+		return Response{}, errors.Wrap(err, "create cache output folder")
 	}
 
 	cfg := req.Config
@@ -46,12 +51,7 @@ func Build(rootPath string, req Request) (Response, error) {
 		return Response{}, errors.Wrap(err, "config")
 	}
 
-	err = run(os.Stdout, "setup-cgroups")
-	if err != nil {
-		return Response{}, errors.Wrap(err, "setup cgroups")
-	}
-
-	addr, err := spawnBuildkitd("/var/log/buildkitd.log")
+	addr, err := spawnBuildkitd()
 	if err != nil {
 		return Response{}, errors.Wrap(err, "spawn buildkitd")
 	}
@@ -64,8 +64,8 @@ func Build(rootPath string, req Request) (Response, error) {
 		"--frontend", "dockerfile.v0",
 		"--local", "context=" + cfg.ContextPath,
 		"--local", "dockerfile=" + dockerfileDir,
-		"--frontend-opt", "filename=" + dockerfileName,
-		"--export-cache", "type=local,mode=min,dest=cache",
+		"--opt", "filename=" + dockerfileName,
+		"--export-cache", "type=local,mode=min,dest=" + cacheDir,
 	}
 
 	if _, err := os.Stat(filepath.Join(cacheDir, "index.json")); err == nil {
@@ -90,7 +90,7 @@ func Build(rootPath string, req Request) (Response, error) {
 
 	for _, arg := range cfg.BuildArgs {
 		buildctlArgs = append(buildctlArgs,
-			"--build-arg", arg,
+			"--opt", "build-arg:"+arg,
 		)
 	}
 
@@ -116,7 +116,7 @@ func Build(rootPath string, req Request) (Response, error) {
 func unpackRootfs(dest string, ociImagePath string, cfg Config) error {
 	layoutDir := filepath.Join(dest, "layout")
 	rootfsDir := filepath.Join(dest, "rootfs")
-	manifestPath := filepath.Join(dest, "manifest.json")
+	metadataPath := filepath.Join(dest, "metadata.json")
 
 	logrus.Debug("unpacking oci layout")
 
@@ -175,12 +175,12 @@ func unpackRootfs(dest string, ociImagePath string, cfg Config) error {
 			return errors.Wrap(err, "get image from oci layout")
 		}
 
-		err = unpackImage(rootfsDir, image, false)
+		err = unpackImage(rootfsDir, image, cfg.Debug)
 		if err != nil {
 			return errors.Wrap(err, "unpack image")
 		}
 
-		err = writeImageManifest(manifestPath, image)
+		err = writeImageManifest(metadataPath, image)
 		if err != nil {
 			return errors.Wrap(err, "write image manifest")
 		}
@@ -195,13 +195,13 @@ func unpackRootfs(dest string, ociImagePath string, cfg Config) error {
 	return nil
 }
 
-func writeImageManifest(manifestPath string, image v1.Image) error {
+func writeImageManifest(metadataPath string, image v1.Image) error {
 	cfg, err := image.ConfigFile()
 	if err != nil {
 		return errors.Wrap(err, "load image config")
 	}
 
-	meta, err := os.Create(manifestPath)
+	meta, err := os.Create(metadataPath)
 	if err != nil {
 		return errors.Wrap(err, "create metadata file")
 	}
@@ -272,6 +272,11 @@ func sanitize(cfg *Config) error {
 		}
 
 		for _, arg := range strings.Split(string(buildArgs), "\n") {
+			if len(arg) == 0 {
+				// skip blank lines
+				continue
+			}
+
 			cfg.BuildArgs = append(cfg.BuildArgs, arg)
 		}
 	}
@@ -291,15 +296,25 @@ func run(out io.Writer, path string, args ...string) error {
 	return cmd.Run()
 }
 
-func spawnBuildkitd(logPath string) (string, error) {
-	runPath := os.Getenv("XDG_RUNTIME_PATH")
-	if runPath == "" {
-		runPath = "/run"
+func spawnBuildkitd() (string, error) {
+	err := run(os.Stdout, "setup-cgroups")
+	if err != nil {
+		return "", errors.Wrap(err, "setup cgroups")
+	}
+
+	var logPath string
+
+	runDir := os.Getenv("XDG_RUNTIME_DIR")
+	if runDir == "" {
+		runDir = "/run"
+		logPath = "/var/log/buildkitd.log"
+	} else {
+		logPath = filepath.Join(runDir, "buildkitd.log")
 	}
 
 	addr := (&url.URL{
 		Scheme: "unix",
-		Path:   path.Join(runPath, "buildkitd", "buildkitd.sock"),
+		Path:   path.Join(runDir, "buildkitd", "buildkitd.sock"),
 	}).String()
 
 	buildkitdFlags := []string{"--addr=" + addr}

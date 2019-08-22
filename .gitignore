@@ -1,0 +1,5 @@
+# created by scripts/test
+scripts/.tests
+bin/buildctl
+bin/buildkitd
+bin/buildkit-runc

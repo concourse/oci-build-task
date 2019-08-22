@@ -1,0 +1,24 @@
+#!/bin/bash
+
+set -e -u -x
+
+cd $(dirname $0)/..
+
+if ! [ -e bin/buildctl ] || ! [ -e bin/buildkitd ]; then
+  dest=$(pwd)
+  pushd buildkit
+    make
+    make DESTDIR=$dest install
+  popd
+
+  # once a new version of buildkit is out, remove the submodule and do the
+  # following instead
+  #
+  # BUILDKIT_VERSION=0.6.1
+  # BUILDKIT_URL=https://github.com/moby/buildkit/releases/download/v$BUILDKIT_VERSION/buildkit-v$BUILDKIT_VERSION.linux-amd64.tar.gz
+
+  # curl -fsSL "$BUILDKIT_URL" | tar zxf -
+fi
+
+go test -c -o scripts/.tests
+sudo scripts/.tests "$@"

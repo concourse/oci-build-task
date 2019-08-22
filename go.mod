@@ -16,6 +16,7 @@ require (
 	github.com/opencontainers/image-spec v1.0.1
 	github.com/pkg/errors v0.8.1
 	github.com/sirupsen/logrus v1.4.2
+	github.com/stretchr/testify v1.4.0
 	github.com/u-root/u-root v6.0.0+incompatible
 	github.com/vbauerster/mpb v3.4.0+incompatible
 	github.com/vrischmann/envconfig v1.2.0

@@ -30,7 +30,7 @@ func main() {
 	}
 
 	res, err := task.Build(wd, req)
-	failIf("failed to build", err)
+	failIf("build", err)
 
 	responseFile, err := os.Create(req.ResponsePath)
 	failIf("open response path", err)
