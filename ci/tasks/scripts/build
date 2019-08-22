@@ -1,0 +1,16 @@
+#!/bin/bash
+
+set -e -u
+
+export GOPATH=$PWD/gopath
+export PATH=$PWD/gopath/bin:$PATH
+
+output=$PWD/bin
+
+cd builder-task/
+
+cp bin/setup-cgroups $output/
+
+export CGO_ENABLED=0
+go build -o $output/builder-task ./cmd/builder-task
+go build -o $output/build ./cmd/build

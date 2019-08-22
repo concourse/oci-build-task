@@ -1,0 +1,22 @@
+---
+platform: linux
+
+image_resource:
+  type: registry-image
+  source:
+    repository: moby/buildkit
+    tag: master
+
+inputs:
+- name: builder-task
+- name: bin
+
+outputs:
+- name: image
+
+params:
+  REPOSITORY: concourse/builder-task
+  CONTEXT: builder-task
+
+run:
+  path: builder-task/ci/tasks/scripts/build-image

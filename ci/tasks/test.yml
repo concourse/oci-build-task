@@ -9,4 +9,4 @@ inputs:
 - name: builder-task
 
 run:
-  path: builder-task/ci/test
+  path: builder-task/ci/tasks/scripts/test

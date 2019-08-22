@@ -1,0 +1,35 @@
+---
+resources:
+- name: builder-task
+  type: git
+  source:
+    uri: https://github.com/concourse/builder-task
+    branch: buildkit-spike
+
+- name: builder-task-image
+  type: registry-image
+  source:
+    repository: concourse/buildkit-task
+    tag: buildkit-spike
+
+jobs:
+- name: test
+  plan:
+  - get: builder-task
+  - task: test
+    privileged: true
+    file: builder-task/ci/test.yml
+
+- name: build
+  plan:
+  - get: builder-task
+    passed: [test]
+  - task: build
+    file: builder-task/ci/build.yml
+  - task: build-image
+    privileged: true
+    file: builder-task/ci/build-image.yml
+
+  # TODO: this needs support for pushing OCI images
+  - put: builder-task-image
+    params: {image: image/image.tar}
