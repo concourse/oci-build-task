@@ -18,17 +18,17 @@ jobs:
   - get: builder-task
   - task: test
     privileged: true
-    file: builder-task/ci/test.yml
+    file: builder-task/ci/tasks/test.yml
 
 - name: build
   plan:
   - get: builder-task
     passed: [test]
   - task: build
-    file: builder-task/ci/build.yml
+    file: builder-task/ci/tasks/build.yml
   - task: build-image
     privileged: true
-    file: builder-task/ci/build-image.yml
+    file: builder-task/ci/tasks/build-image.yml
 
   # TODO: this needs support for pushing OCI images
   - put: builder-task-image
