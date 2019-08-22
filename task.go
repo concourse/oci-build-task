@@ -24,14 +24,9 @@ import (
 	"github.com/u-root/u-root/pkg/termios"
 )
 
-func Build(req Request) (Response, error) {
+func Build(rootPath string, req Request) (Response, error) {
 	if req.Config.Debug {
 		logrus.SetLevel(logrus.DebugLevel)
-	}
-
-	rootPath, err := os.Getwd()
-	if err != nil {
-		return Response{}, errors.Wrap(err, "get root path")
 	}
 
 	imageDir := filepath.Join(rootPath, "image")

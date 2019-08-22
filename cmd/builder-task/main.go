@@ -13,7 +13,10 @@ func main() {
 	err := json.NewDecoder(os.Stdin).Decode(&req)
 	failIf("read request", err)
 
-	res, err := task.Build(req)
+	wd, err := os.Getwd()
+	failIf("get root path", err)
+
+	res, err := task.Build(wd, req)
 	failIf("failed to build", err)
 
 	responseFile, err := os.Create(req.ResponsePath)
