@@ -10,14 +10,12 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"syscall"
 	"time"
 
-	"github.com/concourse/go-archive/tarfs"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
-	"github.com/google/go-containerregistry/pkg/v1/layout"
+	"github.com/google/go-containerregistry/pkg/v1/tarball"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -77,7 +75,7 @@ func Build(rootPath string, req Request) (Response, error) {
 	if _, err := os.Stat(imageDir); err == nil {
 		ociImagePath = filepath.Join(imageDir, "image.tar")
 		buildctlArgs = append(buildctlArgs,
-			"--output", "type=oci,dest="+ociImagePath,
+			"--output", "type=docker,dest="+ociImagePath,
 		)
 	}
 
@@ -113,91 +111,30 @@ func Build(rootPath string, req Request) (Response, error) {
 }
 
 func unpackRootfs(dest string, ociImagePath string, cfg Config) error {
-	layoutDir := filepath.Join(dest, "layout")
 	rootfsDir := filepath.Join(dest, "rootfs")
 	metadataPath := filepath.Join(dest, "metadata.json")
 
-	logrus.Debug("unpacking oci layout")
-
-	tarFile, err := os.Open(ociImagePath)
+	image, err := tarball.ImageFromPath(ociImagePath, nil)
 	if err != nil {
-		return errors.Wrap(err, "open oci archive")
+		return errors.Wrap(err, "open oci image")
 	}
 
-	err = tarfs.Extract(tarFile, layoutDir)
+	logrus.Info("unpacking image")
+
+	err = unpackImage(rootfsDir, image, cfg.Debug)
 	if err != nil {
-		return errors.Wrap(err, "unpack oci archive")
+		return errors.Wrap(err, "unpack image")
 	}
 
-	err = tarFile.Close()
+	err = writeImageMetadata(metadataPath, image)
 	if err != nil {
-		return errors.Wrap(err, "close oci archive")
-	}
-
-	imageIndex, err := layout.ImageIndexFromPath(layoutDir)
-	if err != nil {
-		return errors.Wrap(err, "load image layout")
-	}
-
-	manifest, err := imageIndex.IndexManifest()
-	if err != nil {
-		return errors.Wrap(err, "get index manifest")
-	}
-
-	var unpacked string
-	for _, m := range manifest.Manifests {
-		if m.Platform != nil {
-			if m.Platform.OS != runtime.GOOS || m.Platform.Architecture != runtime.GOARCH {
-				continue
-			}
-		}
-
-		// TODO: is this even a sensible approach?
-		//
-		// note: depends on newer buildkit with support for named oci output
-		// if m.Annotations != nil && m.Annotations[ocispec.AnnotationRefName] != cfg.Tag {
-		// 	continue
-		// }
-
-		if unpacked != "" {
-			logrus.WithFields(logrus.Fields{
-				"digest":           m.Digest,
-				"already-unpacked": unpacked,
-			}).Fatalln("found another image to unpack after already unpacking one")
-		}
-
-		logrus.WithFields(logrus.Fields{
-			"platform":    m.Platform,
-			"annotations": m.Annotations,
-			"digest":      m.Digest,
-		}).Debug("unpacking image")
-
-		image, err := imageIndex.Image(m.Digest)
-		if err != nil {
-			return errors.Wrap(err, "get image from oci layout")
-		}
-
-		err = unpackImage(rootfsDir, image, cfg.Debug)
-		if err != nil {
-			return errors.Wrap(err, "unpack image")
-		}
-
-		err = writeImageManifest(metadataPath, image)
-		if err != nil {
-			return errors.Wrap(err, "write image manifest")
-		}
-
-		unpacked = m.Digest.String()
-	}
-
-	if unpacked == "" {
-		return errors.New("could not determine image to unpack")
+		return errors.Wrap(err, "write image metadata")
 	}
 
 	return nil
 }
 
-func writeImageManifest(metadataPath string, image v1.Image) error {
+func writeImageMetadata(metadataPath string, image v1.Image) error {
 	cfg, err := image.ConfigFile()
 	if err != nil {
 		return errors.Wrap(err, "load image config")
