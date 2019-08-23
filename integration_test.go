@@ -8,11 +8,13 @@ import (
 	"testing"
 
 	task "github.com/concourse/builder-task"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
 type TaskSuite struct {
 	suite.Suite
+	*require.Assertions
 
 	rootDir string
 	req     task.Request
@@ -123,5 +125,7 @@ func (s *TaskSuite) imageMetadata() (task.ImageMetadata, error) {
 }
 
 func TestSuite(t *testing.T) {
-	suite.Run(t, &TaskSuite{})
+	suite.Run(t, &TaskSuite{
+		Assertions: require.New(t),
+	})
 }
