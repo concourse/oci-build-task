@@ -16,17 +16,17 @@ type TaskSuite struct {
 	suite.Suite
 	*require.Assertions
 
-	rootDir string
-	req     task.Request
+	outputsDir string
+	req        task.Request
 }
 
 func (s *TaskSuite) SetupTest() {
 	var err error
-	s.rootDir, err = ioutil.TempDir("", "builder-task-test")
+	s.outputsDir, err = ioutil.TempDir("", "builder-task-test")
 	s.NoError(err)
 
 	s.req = task.Request{
-		ResponsePath: filepath.Join(s.rootDir, "response.json"),
+		ResponsePath: filepath.Join(s.outputsDir, "response.json"),
 		Config: task.Config{
 			Repository: "builder-task-test",
 		},
@@ -34,60 +34,76 @@ func (s *TaskSuite) SetupTest() {
 }
 
 func (s *TaskSuite) TearDownTest() {
-	err := os.RemoveAll(s.rootDir)
+	err := os.RemoveAll(s.outputsDir)
 	s.NoError(err)
 }
 
 func (s *TaskSuite) TestMissingRepositoryValidation() {
 	s.req.Config.Repository = ""
 
-	_, err := task.Build(s.rootDir, s.req)
+	_, err := task.Build(s.outputsDir, s.req)
 	s.EqualError(err, "config: repository must be specified")
 }
 
 func (s *TaskSuite) TestBasicBuild() {
-	s.req.Config.ContextPath = "testdata/basic"
+	s.req.Config.ContextDir = "testdata/basic"
 
-	_, err := task.Build(s.rootDir, s.req)
+	_, err := task.Build(s.outputsDir, s.req)
+	s.NoError(err)
+}
+
+func (s *TaskSuite) TestDockerfilePath() {
+	s.req.Config.ContextDir = "testdata/dockerfile-path"
+	s.req.Config.DockerfilePath = "testdata/dockerfile-path/hello.Dockerfile"
+
+	_, err := task.Build(s.outputsDir, s.req)
+	s.NoError(err)
+}
+
+func (s *TaskSuite) TestTarget() {
+	s.req.Config.ContextDir = "testdata/multi-target"
+	s.req.Config.Target = "working-target"
+
+	_, err := task.Build(s.outputsDir, s.req)
 	s.NoError(err)
 }
 
 func (s *TaskSuite) TestBuildArgs() {
-	s.req.Config.ContextPath = "testdata/build-args"
+	s.req.Config.ContextDir = "testdata/build-args"
 	s.req.Config.BuildArgs = []string{
 		"some_arg=some_value",
 		"some_other_arg=some_other_value",
 	}
 
 	// the Dockerfile itself asserts that the arg has been received
-	_, err := task.Build(s.rootDir, s.req)
+	_, err := task.Build(s.outputsDir, s.req)
 	s.NoError(err)
 }
 
 func (s *TaskSuite) TestBuildArgsFile() {
-	s.req.Config.ContextPath = "testdata/build-args"
+	s.req.Config.ContextDir = "testdata/build-args"
 	s.req.Config.BuildArgsFile = "testdata/build-args/build_args_file"
 
 	// the Dockerfile itself asserts that the arg has been received
-	_, err := task.Build(s.rootDir, s.req)
+	_, err := task.Build(s.outputsDir, s.req)
 	s.NoError(err)
 }
 
 func (s *TaskSuite) TestBuildArgsStaticAndFile() {
-	s.req.Config.ContextPath = "testdata/build-args"
+	s.req.Config.ContextDir = "testdata/build-args"
 	s.req.Config.BuildArgs = []string{"some_arg=some_value"}
 	s.req.Config.BuildArgsFile = "testdata/build-args/build_arg_file"
 
 	// the Dockerfile itself asserts that the arg has been received
-	_, err := task.Build(s.rootDir, s.req)
+	_, err := task.Build(s.outputsDir, s.req)
 	s.NoError(err)
 }
 
 func (s *TaskSuite) TestUnpackRootfs() {
-	s.req.Config.ContextPath = "testdata/unpack-rootfs"
+	s.req.Config.ContextDir = "testdata/unpack-rootfs"
 	s.req.Config.UnpackRootfs = true
 
-	_, err := task.Build(s.rootDir, s.req)
+	_, err := task.Build(s.outputsDir, s.req)
 	s.NoError(err)
 
 	meta, err := s.imageMetadata()
@@ -106,7 +122,7 @@ func (s *TaskSuite) TestUnpackRootfs() {
 }
 
 func (s *TaskSuite) imagePath(path ...string) string {
-	return filepath.Join(append([]string{s.rootDir, "image"}, path...)...)
+	return filepath.Join(append([]string{s.outputsDir, "image"}, path...)...)
 }
 
 func (s *TaskSuite) imageMetadata() (task.ImageMetadata, error) {

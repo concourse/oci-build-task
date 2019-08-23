@@ -51,7 +51,7 @@ type Config struct {
 	Tag     string `json:"tag"      envconfig:"optional"`
 	TagFile string `json:"tag_file" envconfig:"optional"`
 
-	ContextPath    string `json:"context"              envconfig:"CONTEXT,optional"`
+	ContextDir     string `json:"context"              envconfig:"CONTEXT,optional"`
 	DockerfilePath string `json:"dockerfile,omitempty" envconfig:"DOCKERFILE,optional"`
 
 	Target     string `json:"target"      envconfig:"optional"`

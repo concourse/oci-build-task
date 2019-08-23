@@ -20,19 +20,25 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func Build(rootPath string, req Request) (Response, error) {
+func Build(outputsDir string, req Request) (Response, error) {
 	if req.Config.Debug {
 		logrus.SetLevel(logrus.DebugLevel)
 	}
 
-	imageDir := filepath.Join(rootPath, "image")
-	cacheDir := filepath.Join(rootPath, "cache")
+	cfg := req.Config
+	err := sanitize(&cfg)
+	if err != nil {
+		return Response{}, errors.Wrap(err, "config")
+	}
+
+	imageDir := filepath.Join(outputsDir, "image")
+	cacheDir := filepath.Join(outputsDir, "cache")
 
 	res := Response{
 		Outputs: []string{"image", "cache"},
 	}
 
-	err := os.MkdirAll(imageDir, 0755)
+	err = os.MkdirAll(imageDir, 0755)
 	if err != nil {
 		return Response{}, errors.Wrap(err, "create image output folder")
 	}
@@ -42,16 +48,12 @@ func Build(rootPath string, req Request) (Response, error) {
 		return Response{}, errors.Wrap(err, "create cache output folder")
 	}
 
-	cfg := req.Config
-	err = sanitize(&cfg)
-	if err != nil {
-		return Response{}, errors.Wrap(err, "config")
-	}
-
 	addr, err := spawnBuildkitd()
 	if err != nil {
 		return Response{}, errors.Wrap(err, "spawn buildkitd")
 	}
+
+	ociImagePath := filepath.Join(imageDir, "image.tar")
 
 	dockerfileDir := filepath.Dir(cfg.DockerfilePath)
 	dockerfileName := filepath.Base(cfg.DockerfilePath)
@@ -59,23 +61,16 @@ func Build(rootPath string, req Request) (Response, error) {
 	buildctlArgs := []string{
 		"build",
 		"--frontend", "dockerfile.v0",
-		"--local", "context=" + cfg.ContextPath,
+		"--local", "context=" + cfg.ContextDir,
 		"--local", "dockerfile=" + dockerfileDir,
 		"--opt", "filename=" + dockerfileName,
 		"--export-cache", "type=local,mode=min,dest=" + cacheDir,
+		"--output", "type=docker,dest=" + ociImagePath,
 	}
 
 	if _, err := os.Stat(filepath.Join(cacheDir, "index.json")); err == nil {
 		buildctlArgs = append(buildctlArgs,
 			"--import-cache", "type=local,src="+cacheDir,
-		)
-	}
-
-	var ociImagePath string
-	if _, err := os.Stat(imageDir); err == nil {
-		ociImagePath = filepath.Join(imageDir, "image.tar")
-		buildctlArgs = append(buildctlArgs,
-			"--output", "type=docker,dest="+ociImagePath,
 		)
 	}
 
@@ -176,12 +171,12 @@ func sanitize(cfg *Config) error {
 		return errors.New("repository must be specified")
 	}
 
-	if cfg.ContextPath == "" {
-		cfg.ContextPath = "."
+	if cfg.ContextDir == "" {
+		cfg.ContextDir = "."
 	}
 
 	if cfg.DockerfilePath == "" {
-		cfg.DockerfilePath = filepath.Join(cfg.ContextPath, "Dockerfile")
+		cfg.DockerfilePath = filepath.Join(cfg.ContextDir, "Dockerfile")
 	}
 
 	if cfg.TagFile != "" {
