@@ -26,6 +26,9 @@ func (s *TaskSuite) SetupTest() {
 	s.outputsDir, err = ioutil.TempDir("", "builder-task-test")
 	s.NoError(err)
 
+	err = os.Mkdir(s.imagePath(), 0755)
+	s.NoError(err)
+
 	s.req = task.Request{
 		ResponsePath: filepath.Join(s.outputsDir, "response.json"),
 		Config:       task.Config{},

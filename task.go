@@ -38,16 +38,6 @@ func Build(outputsDir string, req Request) (Response, error) {
 		Outputs: []string{"image", "cache"},
 	}
 
-	err = os.MkdirAll(imageDir, 0755)
-	if err != nil {
-		return Response{}, errors.Wrap(err, "create image output folder")
-	}
-
-	err = os.MkdirAll(cacheDir, 0755)
-	if err != nil {
-		return Response{}, errors.Wrap(err, "create cache output folder")
-	}
-
 	addr, err := spawnBuildkitd()
 	if err != nil {
 		return Response{}, errors.Wrap(err, "spawn buildkitd")
@@ -66,8 +56,18 @@ func Build(outputsDir string, req Request) (Response, error) {
 		"--local", "context=" + cfg.ContextDir,
 		"--local", "dockerfile=" + dockerfileDir,
 		"--opt", "filename=" + dockerfileName,
-		"--export-cache", "type=local,mode=min,dest=" + cacheDir,
-		"--output", "type=docker,dest=" + imagePath,
+	}
+
+	if _, err := os.Stat(imageDir); err == nil {
+		buildctlArgs = append(buildctlArgs,
+			"--output", "type=docker,dest="+imagePath,
+		)
+	}
+
+	if _, err := os.Stat(cacheDir); err == nil {
+		buildctlArgs = append(buildctlArgs,
+			"--export-cache", "type=local,mode=min,dest="+cacheDir,
+		)
 	}
 
 	if _, err := os.Stat(filepath.Join(cacheDir, "index.json")); err == nil {
