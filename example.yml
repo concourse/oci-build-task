@@ -3,11 +3,11 @@ platform: linux
 
 image_resource:
   type: registry-image
-  source: {repository: vito/buildkit-task}
+  source:
+    repository: concourse/builder-task
+    tag: buildkit
 
 params:
-  REPOSITORY: concourse/builder-task
-  TAG: latest
   CONTEXT: builder-task
 
 inputs:

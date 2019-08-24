@@ -1,8 +1,8 @@
 # builder
 
 A Concourse task to builds Docker images without pushing and without spinning
-up a Docker daemon. Currently uses [`img`](http://github.com/genuinetools/img)
-for the building and saving.
+up a Docker daemon. Currently uses
+[`buildkit`](http://github.com/moby/buildkit) for the building and saving.
 
 This repository describes an image which should be used to run a task similar
 to `example.yml`.
@@ -24,19 +24,8 @@ configure this via `image_resource` or pull it in as part of your pipeline.
 
 ### `params`
 
-The following params are required:
-
-* `$REPOSITORY`: the repository to name the image, e.g.
-  `concourse/builder-task`.
-
-The following are optional:
-
-* `$TAG` (default `latest`): the tag to apply to the image.
-
-* `$TAG_FILE` (default empty): the tag should be a path to a file containing the name of the tag.
-
-* `$CONTEXT` (default `.`): the path to the directory to build. This should
-  refer to one of the inputs.
+* `$CONTEXT` (default `.`): the path to the directory to provide as the context
+  for the build.
 
 * `$DOCKERFILE` (default `$CONTEXT/Dockerfile`): the path to the `Dockerfile`
   to build.
@@ -56,7 +45,11 @@ The following are optional:
 
 * `$TARGET` (default empty): the target build stage to build.
 
-* `$TARGET_FILE` (default empty): the path to a file containing the name of the target build stage to build.
+* `$TARGET_FILE` (default empty): the path to a file containing the name of the
+  target build stage to build.
+
+* `$UNPACK_ROOTFS` (default `false`): unpack the image as Concourse's image
+  format (`rootfs/`, `metadata.json`).
 
 ### `inputs`
 
@@ -66,21 +59,31 @@ needs as an input.
 ### `outputs`
 
 Your task may configure an output called `image`. The saved image tarball will
-be written to `image.tar` within the output. This tarball can be passed along
-to `docker load`, or uploaded to a registry using the [Registry Image
+be written to `image.tar` within the output.
+
+This tarball can be uploaded to a registry using the [Registry Image
 resource](https://github.com/concourse/registry-image-resource#out-push-an-image-up-to-the-registry-under-the-given-tags).
 
-Your task may configure an output called `rootfs`. A `metadata.json` and `rootfs` subfolder will
-be created in the output. This can be used to start the image in a subsequent task without
-uploading it to a registry using the ["image" task step option](https://concourse-ci.org/task-step.html#task-step-image).
+A file named `digest` will also be created in the output directory. This can be
+used for tagging the image after loading it, like so:
+
+```sh
+docker load -i image/image.tar
+docker tag $(cat image/digest) my-name
+```
+
+If `$UNPACK_ROOTFS` is configured, a `metadata.json` and `rootfs` subfolder
+will be created in the output. This can be used to start the image in a
+subsequent task without uploading it to a registry using the ["image" task step
+option](https://concourse-ci.org/task-step.html#task-step-image).
 
 ### `caches`
 
-Build caching can be enabled by configuring a cache named `cache` on the task.
+Caching can be enabled by configuring a cache named `cache` on the task.
 
 ### `run`
 
-Your task should execute the `build` script.
+Your task should execute the `build` executable.
 
 
 ## example
