@@ -11,6 +11,18 @@ it currently still requires it.
 
 <!-- toc -->
 
+- [differences from `builder-task`](#differences-from-builder-task)
+- [task config](#task-config)
+  * [`image_resource`](#image_resource)
+  * [`params`](#params)
+  * [`inputs`](#inputs)
+  * [`outputs`](#outputs)
+  * [`caches`](#caches)
+  * [`run`](#run)
+- [example](#example)
+
+<!-- tocstop -->
+
 ## differences from `builder-task`
 
 * simpler and more efficient caching implementation
