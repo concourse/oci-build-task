@@ -1,32 +1,50 @@
-# builder
+# `oci-build` task
 
 A Concourse task for building [OCI
 images](https://github.com/opencontainers/image-spec). Currently uses
 [`buildkit`](http://github.com/moby/buildkit) for building.
 
-This repository describes an image which should be used to run a task similar
-to `example.yml`.
-
 A stretch goal of this is to support running without `privileged: true`, though
 it currently still requires it.
 
+## differences from `builder-task`
+
+* simpler and more efficient caching implementation
+* does not support configuring `$REPOSITORY` or `$TAG`
+  * for running the image with `docker`, a `digest` file is provided which can
+    be tagged with `docker tag`
+  * for pushing the image, the repository and tag are configured in the
+    [`registry-image`
+    resource](https://github.com/concourse/registry-image-resource)
+* written in Go, with tests!
+* uses `buildkit` directly
 
 ## task config
 
-Concourse doesn't yet have easily distributable task configs (there's an [open
-call for an RFC](https://github.com/concourse/rfcs/issues/7)), so we'll just
-have to document what you need to set in your own task config here.
+The task implementation is available as
+[`concourse/oci-build-task`](http://hub.docker.com/r/concourse/oci-build-task),
+which is built from [`Dockerfile`](Dockerfile).
 
-### `image`
+This task implementation started as a spike to explore patterns around
+[reusable tasks](https://github.com/concourse/rfcs/issues/7) in service of
+coming up with ideas for a proper RFC. Until that RFC is written and
+implemented, configuration is still done by way of providing your own task
+config as follows:
 
-The task's image should refer to the
-[`concourse/builder-task`](http://hub.docker.com/r/concourse/builder-task)
-repository, which is built from [`Dockerfile`](Dockerfile).
+### `image_resource`
 
-You can either configure this via `image_resource` or pull it in as part of
-your pipeline.
+First, your task needs to point to the `oci-build-task` image:
+
+```yaml
+image_resource:
+  type: registry-image
+  source:
+    repository: concourse/oci-build-task
+```
 
 ### `params`
+
+Next, any of the following optional parameters may be specified:
 
 * `$CONTEXT` (default `.`): the path to the directory to provide as the context
   for the build.
@@ -54,8 +72,13 @@ your pipeline.
   target build stage to build.
 
 * `$UNPACK_ROOTFS` (default `false`): unpack the image as Concourse's image
-  format (`rootfs/`, `metadata.json`) for use with [`image` task step
+  format (`rootfs/`, `metadata.json`) for use with the [`image` task step
   option](https://concourse-ci.org/task-step.html#task-step-image).
+
+> Note: this is the main pain point with reusable tasks - env vars are kind of
+> an awkward way to configure a task. Once the RFC lands these will turn into a
+> JSON structure similar to configuring `params` on a resource, and task params
+> will become `env` instead.
 
 ### `inputs`
 
@@ -131,11 +154,10 @@ The output will contain the following files:
 If `$UNPACK_ROOTFS` is configured, the following additional entries will be
 created:
 
-* `rootfs/*` (with `$UNPACK_ROOTFS`): the unpacked contents of the image's
-  filesystem.
+* `rootfs/*`: the unpacked contents of the image's filesystem.
 
-* `metadata.json` (with `$UNPACK_ROOTFS`): a JSON file containing the image's
-  env and user configuration.
+* `metadata.json`: a JSON file containing the image's env and user
+  configuration.
 
 This is a Concourse-specific format to support using the newly built image for
 a subsequent task by pointing the task step's [`image`
@@ -176,7 +198,7 @@ run:
 
 ## example
 
-This repo contains an `example.yml`, which builds the image for the builder
+This repo contains an `example.yml`, which builds the image for the task
 itself:
 
 ```sh
