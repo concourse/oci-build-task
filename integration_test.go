@@ -71,6 +71,14 @@ func (s *TaskSuite) TestTarget() {
 	s.NoError(err)
 }
 
+func (s *TaskSuite) TestTargetFile() {
+	s.req.Config.ContextDir = "testdata/multi-target"
+	s.req.Config.TargetFile = "testdata/multi-target/target_file"
+
+	_, err := task.Build(s.outputsDir, s.req)
+	s.NoError(err)
+}
+
 func (s *TaskSuite) TestBuildArgs() {
 	s.req.Config.ContextDir = "testdata/build-args"
 	s.req.Config.BuildArgs = []string{
