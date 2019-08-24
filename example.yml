@@ -7,11 +7,9 @@ image_resource:
     repository: concourse/builder-task
     tag: buildkit
 
-params:
-  CONTEXT: builder-task
-
 inputs:
 - name: builder-task
+  path: .
 
 outputs:
 - name: image
