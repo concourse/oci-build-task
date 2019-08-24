@@ -44,12 +44,7 @@ type Response struct {
 // For now, and for backwards-compatibility, we will also support taking values
 // from task params (i.e. env), hence the use of `envconfig:`.
 type Config struct {
-	Repository string `json:"repository"`
-
 	Debug bool `json:"debug" envconfig:"optional"`
-
-	Tag     string `json:"tag"      envconfig:"optional"`
-	TagFile string `json:"tag_file" envconfig:"optional"`
 
 	ContextDir     string `json:"context"              envconfig:"CONTEXT,optional"`
 	DockerfilePath string `json:"dockerfile,omitempty" envconfig:"DOCKERFILE,optional"`
@@ -64,10 +59,6 @@ type Config struct {
 	//
 	// Theoretically this would go away if/when we standardize on OCI.
 	UnpackRootfs bool `json:"unpack_rootfs" envconfig:"optional"`
-}
-
-func (cfg Config) ImageName() string {
-	return cfg.Repository + ":" + cfg.Tag
 }
 
 // ImageMetadata is the schema written to manifest.json when producing the

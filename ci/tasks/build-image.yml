@@ -15,7 +15,6 @@ outputs:
 - name: image
 
 params:
-  REPOSITORY: concourse/builder-task
   CONTEXT: builder-task
 
 run:

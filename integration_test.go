@@ -27,9 +27,7 @@ func (s *TaskSuite) SetupTest() {
 
 	s.req = task.Request{
 		ResponsePath: filepath.Join(s.outputsDir, "response.json"),
-		Config: task.Config{
-			Repository: "builder-task-test",
-		},
+		Config:       task.Config{},
 	}
 }
 
@@ -38,18 +36,23 @@ func (s *TaskSuite) TearDownTest() {
 	s.NoError(err)
 }
 
-func (s *TaskSuite) TestMissingRepositoryValidation() {
-	s.req.Config.Repository = ""
-
-	_, err := task.Build(s.outputsDir, s.req)
-	s.EqualError(err, "config: repository must be specified")
-}
-
 func (s *TaskSuite) TestBasicBuild() {
 	s.req.Config.ContextDir = "testdata/basic"
 
 	_, err := task.Build(s.outputsDir, s.req)
 	s.NoError(err)
+}
+
+func (s *TaskSuite) TestDigestFile() {
+	s.req.Config.ContextDir = "testdata/digest"
+
+	_, err := task.Build(s.outputsDir, s.req)
+	s.NoError(err)
+
+	digest, err := ioutil.ReadFile(s.imagePath("digest"))
+	s.NoError(err)
+
+	s.Equal(string(digest), "sha256:725c9a9e7bbd75b2081c0ca92788a4d29d4d728e4efeec52a1da5f91a3d600b8")
 }
 
 func (s *TaskSuite) TestDockerfilePath() {

@@ -1,1 +1,2 @@
-FROM scratch
+FROM busybox
+RUN true

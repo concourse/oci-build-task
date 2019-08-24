@@ -53,7 +53,8 @@ func Build(outputsDir string, req Request) (Response, error) {
 		return Response{}, errors.Wrap(err, "spawn buildkitd")
 	}
 
-	ociImagePath := filepath.Join(imageDir, "image.tar")
+	imagePath := filepath.Join(imageDir, "image.tar")
+	digestPath := filepath.Join(imageDir, "digest")
 
 	dockerfileDir := filepath.Dir(cfg.DockerfilePath)
 	dockerfileName := filepath.Base(cfg.DockerfilePath)
@@ -65,7 +66,7 @@ func Build(outputsDir string, req Request) (Response, error) {
 		"--local", "dockerfile=" + dockerfileDir,
 		"--opt", "filename=" + dockerfileName,
 		"--export-cache", "type=local,mode=min,dest=" + cacheDir,
-		"--output", "type=docker,dest=" + ociImagePath,
+		"--output", "type=docker,dest=" + imagePath,
 	}
 
 	if _, err := os.Stat(filepath.Join(cacheDir, "index.json")); err == nil {
@@ -95,8 +96,23 @@ func Build(outputsDir string, req Request) (Response, error) {
 		return Response{}, errors.Wrap(err, "build")
 	}
 
+	image, err := tarball.ImageFromPath(imagePath, nil)
+	if err != nil {
+		return Response{}, errors.Wrap(err, "open oci image")
+	}
+
+	manifest, err := image.Manifest()
+	if err != nil {
+		return Response{}, errors.Wrap(err, "get image digest")
+	}
+
+	err = ioutil.WriteFile(digestPath, []byte(manifest.Config.Digest.String()), 0644)
+	if err != nil {
+		return Response{}, errors.Wrap(err, "write digest")
+	}
+
 	if req.Config.UnpackRootfs {
-		err = unpackRootfs(imageDir, ociImagePath, cfg)
+		err = unpackRootfs(imageDir, image, cfg)
 		if err != nil {
 			return Response{}, errors.Wrap(err, "unpack rootfs")
 		}
@@ -105,18 +121,13 @@ func Build(outputsDir string, req Request) (Response, error) {
 	return res, nil
 }
 
-func unpackRootfs(dest string, ociImagePath string, cfg Config) error {
+func unpackRootfs(dest string, image v1.Image, cfg Config) error {
 	rootfsDir := filepath.Join(dest, "rootfs")
 	metadataPath := filepath.Join(dest, "metadata.json")
 
-	image, err := tarball.ImageFromPath(ociImagePath, nil)
-	if err != nil {
-		return errors.Wrap(err, "open oci image")
-	}
-
 	logrus.Info("unpacking image")
 
-	err = unpackImage(rootfsDir, image, cfg.Debug)
+	err := unpackImage(rootfsDir, image, cfg.Debug)
 	if err != nil {
 		return errors.Wrap(err, "unpack image")
 	}
@@ -167,27 +178,12 @@ func writeImageMetadata(metadataPath string, image v1.Image) error {
 }
 
 func sanitize(cfg *Config) error {
-	if cfg.Repository == "" {
-		return errors.New("repository must be specified")
-	}
-
 	if cfg.ContextDir == "" {
 		cfg.ContextDir = "."
 	}
 
 	if cfg.DockerfilePath == "" {
 		cfg.DockerfilePath = filepath.Join(cfg.ContextDir, "Dockerfile")
-	}
-
-	if cfg.TagFile != "" {
-		target, err := ioutil.ReadFile(cfg.TagFile)
-		if err != nil {
-			return errors.Wrap(err, "read target file")
-		}
-
-		cfg.Tag = strings.TrimSpace(string(target))
-	} else if cfg.Tag == "" {
-		cfg.Tag = "latest"
 	}
 
 	if cfg.TargetFile != "" {
