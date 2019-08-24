@@ -14,6 +14,9 @@ inputs:
 outputs:
 - name: image
 
+caches:
+- name: cache
+
 params:
   CONTEXT: builder-task
 
