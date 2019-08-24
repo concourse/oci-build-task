@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	task "github.com/concourse/builder-task"
+	"github.com/google/go-containerregistry/pkg/v1/tarball"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
@@ -52,7 +53,13 @@ func (s *TaskSuite) TestDigestFile() {
 	digest, err := ioutil.ReadFile(s.imagePath("digest"))
 	s.NoError(err)
 
-	s.Equal(string(digest), "sha256:725c9a9e7bbd75b2081c0ca92788a4d29d4d728e4efeec52a1da5f91a3d600b8")
+	image, err := tarball.ImageFromPath(s.imagePath("image.tar"), nil)
+	s.NoError(err)
+
+	manifest, err := image.Manifest()
+	s.NoError(err)
+
+	s.Equal(string(digest), manifest.Config.Digest.String())
 }
 
 func (s *TaskSuite) TestDockerfilePath() {
