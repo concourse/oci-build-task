@@ -45,7 +45,7 @@ func (s *TaskSuite) TestBasicBuild() {
 }
 
 func (s *TaskSuite) TestDigestFile() {
-	s.req.Config.ContextDir = "testdata/digest"
+	s.req.Config.ContextDir = "testdata/basic"
 
 	_, err := task.Build(s.outputsDir, s.req)
 	s.NoError(err)
