@@ -15,7 +15,7 @@ outputs:
 - name: image
 
 caches:
-- name: cache
+- path: cache
 
 params:
   CONTEXT: builder-task
