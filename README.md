@@ -9,6 +9,8 @@ images](https://github.com/opencontainers/image-spec). Currently uses
 A stretch goal of this is to support running without `privileged: true`, though
 it currently still requires it.
 
+<!-- toc -->
+
 ## differences from `builder-task`
 
 * simpler and more efficient caching implementation
