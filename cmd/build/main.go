@@ -16,7 +16,7 @@ const buildArgPrefix = "BUILD_ARG_"
 
 func main() {
 	req := task.Request{
-		ResponsePath: "/dev/stderr",
+		ResponsePath: "/dev/null",
 	}
 
 	err := envconfig.Init(&req.Config)
