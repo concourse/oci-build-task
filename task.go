@@ -61,6 +61,7 @@ func Build(outputsDir string, req Request) (Response, error) {
 
 	buildctlArgs := []string{
 		"build",
+		"--progress", "plain",
 		"--frontend", "dockerfile.v0",
 		"--local", "context=" + cfg.ContextDir,
 		"--local", "dockerfile=" + dockerfileDir,
