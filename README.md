@@ -1,5 +1,7 @@
 # `oci-build` task
 
+![badge](https://ci.concourse-ci.org/api/v1/teams/main/pipelines/builder-task/jobs/test/badge)
+
 A Concourse task for building [OCI
 images](https://github.com/opencontainers/image-spec). Currently uses
 [`buildkit`](http://github.com/moby/buildkit) for building.
