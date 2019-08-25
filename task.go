@@ -2,17 +2,12 @@ package task
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"io/ioutil"
-	"net/url"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
 	"strings"
-	"syscall"
-	"time"
 
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
@@ -20,7 +15,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func Build(outputsDir string, req Request) (Response, error) {
+func Build(buildkitd *Buildkitd, outputsDir string, req Request) (Response, error) {
 	if req.Config.Debug {
 		logrus.SetLevel(logrus.DebugLevel)
 	}
@@ -36,11 +31,6 @@ func Build(outputsDir string, req Request) (Response, error) {
 
 	res := Response{
 		Outputs: []string{"image", "cache"},
-	}
-
-	addr, err := spawnBuildkitd()
-	if err != nil {
-		return Response{}, errors.Wrap(err, "spawn buildkitd")
 	}
 
 	imagePath := filepath.Join(imageDir, "image.tar")
@@ -92,7 +82,7 @@ func Build(outputsDir string, req Request) (Response, error) {
 		"buildctl-args": buildctlArgs,
 	}).Debug("building")
 
-	err = buildctl(addr, os.Stdout, buildctlArgs...)
+	err = buildctl(buildkitd.Addr, os.Stdout, buildctlArgs...)
 	if err != nil {
 		return Response{}, errors.Wrap(err, "build")
 	}
@@ -225,101 +215,4 @@ func run(out io.Writer, path string, args ...string) error {
 	cmd.Stderr = out
 	cmd.Stdin = os.Stdin
 	return cmd.Run()
-}
-
-func spawnBuildkitd() (string, error) {
-	err := run(os.Stdout, "setup-cgroups")
-	if err != nil {
-		return "", errors.Wrap(err, "setup cgroups")
-	}
-
-	var logPath string
-
-	runDir := os.Getenv("XDG_RUNTIME_DIR")
-	if runDir == "" {
-		runDir = "/run"
-		logPath = "/var/log/buildkitd.log"
-	} else {
-		logPath = filepath.Join(runDir, "buildkitd.log")
-	}
-
-	addr := (&url.URL{
-		Scheme: "unix",
-		Path:   path.Join(runDir, "buildkitd", "buildkitd.sock"),
-	}).String()
-
-	buildkitdFlags := []string{"--addr=" + addr}
-
-	var cmd *exec.Cmd
-	if os.Getuid() == 0 {
-		cmd = exec.Command("buildkitd", buildkitdFlags...)
-	} else {
-		cmd = exec.Command("rootlesskit", append([]string{"buildkitd"}, buildkitdFlags...)...)
-	}
-
-	// kill buildkitd on exit
-	cmd.SysProcAttr = &syscall.SysProcAttr{
-		Pdeathsig: syscall.SIGTERM,
-	}
-
-	logFile, err := os.OpenFile(logPath, os.O_CREATE|os.O_APPEND, 0600)
-	if err != nil {
-		return "", errors.Wrap(err, "open log file")
-	}
-
-	cmd.Stdout = logFile
-	cmd.Stderr = logFile
-
-	err = cmd.Start()
-	if err != nil {
-		return "", errors.Wrap(err, "start buildkitd")
-	}
-
-	err = logFile.Close()
-	if err != nil {
-		return "", errors.Wrap(err, "close log file")
-	}
-
-	for {
-		err := buildctl(addr, ioutil.Discard, "debug", "workers")
-		if err == nil {
-			break
-		}
-
-		err = cmd.Process.Signal(syscall.Signal(0))
-		if err != nil {
-			logrus.Warn("builtkitd process probe failed:", err)
-			logrus.Info("dumping buildkit logs due to probe failure")
-
-			fmt.Fprintln(os.Stderr)
-			dumpLogFile(logPath)
-			os.Exit(1)
-		}
-
-		logrus.Debugf("waiting for buildkitd...")
-		time.Sleep(100 * time.Millisecond)
-	}
-
-	logrus.Debug("buildkitd started")
-
-	return addr, nil
-}
-
-func dumpLogFile(logPath string) {
-	logFile, err := os.Open(logPath)
-	if err != nil {
-		logrus.Warn("error opening log file:", err)
-		return
-	}
-
-	_, err = io.Copy(os.Stderr, logFile)
-	if err != nil {
-		logrus.Warn("error streaming log file:", err)
-		return
-	}
-
-	err = logFile.Close()
-	if err != nil {
-		logrus.Warn("error closing log file:", err)
-	}
 }

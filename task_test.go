@@ -17,8 +17,20 @@ type TaskSuite struct {
 	suite.Suite
 	*require.Assertions
 
+	buildkitd  *task.Buildkitd
 	outputsDir string
 	req        task.Request
+}
+
+func (s *TaskSuite) SetupSuite() {
+	var err error
+	s.buildkitd, err = task.SpawnBuildkitd()
+	s.NoError(err)
+}
+
+func (s *TaskSuite) TearDownSuite() {
+	err := s.buildkitd.Cleanup()
+	s.NoError(err)
 }
 
 func (s *TaskSuite) SetupTest() {
@@ -43,14 +55,14 @@ func (s *TaskSuite) TearDownTest() {
 func (s *TaskSuite) TestBasicBuild() {
 	s.req.Config.ContextDir = "testdata/basic"
 
-	_, err := task.Build(s.outputsDir, s.req)
+	_, err := s.build()
 	s.NoError(err)
 }
 
 func (s *TaskSuite) TestDigestFile() {
 	s.req.Config.ContextDir = "testdata/basic"
 
-	_, err := task.Build(s.outputsDir, s.req)
+	_, err := s.build()
 	s.NoError(err)
 
 	digest, err := ioutil.ReadFile(s.imagePath("digest"))
@@ -69,7 +81,7 @@ func (s *TaskSuite) TestDockerfilePath() {
 	s.req.Config.ContextDir = "testdata/dockerfile-path"
 	s.req.Config.DockerfilePath = "testdata/dockerfile-path/hello.Dockerfile"
 
-	_, err := task.Build(s.outputsDir, s.req)
+	_, err := s.build()
 	s.NoError(err)
 }
 
@@ -77,7 +89,7 @@ func (s *TaskSuite) TestTarget() {
 	s.req.Config.ContextDir = "testdata/multi-target"
 	s.req.Config.Target = "working-target"
 
-	_, err := task.Build(s.outputsDir, s.req)
+	_, err := s.build()
 	s.NoError(err)
 }
 
@@ -85,7 +97,7 @@ func (s *TaskSuite) TestTargetFile() {
 	s.req.Config.ContextDir = "testdata/multi-target"
 	s.req.Config.TargetFile = "testdata/multi-target/target_file"
 
-	_, err := task.Build(s.outputsDir, s.req)
+	_, err := s.build()
 	s.NoError(err)
 }
 
@@ -97,7 +109,7 @@ func (s *TaskSuite) TestBuildArgs() {
 	}
 
 	// the Dockerfile itself asserts that the arg has been received
-	_, err := task.Build(s.outputsDir, s.req)
+	_, err := s.build()
 	s.NoError(err)
 }
 
@@ -106,7 +118,7 @@ func (s *TaskSuite) TestBuildArgsFile() {
 	s.req.Config.BuildArgsFile = "testdata/build-args/build_args_file"
 
 	// the Dockerfile itself asserts that the arg has been received
-	_, err := task.Build(s.outputsDir, s.req)
+	_, err := s.build()
 	s.NoError(err)
 }
 
@@ -116,7 +128,7 @@ func (s *TaskSuite) TestBuildArgsStaticAndFile() {
 	s.req.Config.BuildArgsFile = "testdata/build-args/build_arg_file"
 
 	// the Dockerfile itself asserts that the arg has been received
-	_, err := task.Build(s.outputsDir, s.req)
+	_, err := s.build()
 	s.NoError(err)
 }
 
@@ -124,7 +136,7 @@ func (s *TaskSuite) TestUnpackRootfs() {
 	s.req.Config.ContextDir = "testdata/unpack-rootfs"
 	s.req.Config.UnpackRootfs = true
 
-	_, err := task.Build(s.outputsDir, s.req)
+	_, err := s.build()
 	s.NoError(err)
 
 	meta, err := s.imageMetadata()
@@ -140,6 +152,10 @@ func (s *TaskSuite) TestUnpackRootfs() {
 
 	s.Equal(meta.User, "banana")
 	s.Equal(meta.Env, []string{"PATH=/darkness", "BA=nana"})
+}
+
+func (s *TaskSuite) build() (task.Response, error) {
+	return task.Build(s.buildkitd, s.outputsDir, s.req)
 }
 
 func (s *TaskSuite) imagePath(path ...string) string {

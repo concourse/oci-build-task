@@ -29,8 +29,14 @@ func main() {
 		}
 	}
 
-	res, err := task.Build(wd, req)
+	buildkitd, err := task.SpawnBuildkitd()
+	failIf("start buildkitd", err)
+
+	res, err := task.Build(buildkitd, wd, req)
 	failIf("build", err)
+
+	err = buildkitd.Cleanup()
+	failIf("cleanup buildkitd", err)
 
 	responseFile, err := os.Create(req.ResponsePath)
 	failIf("open response path", err)
