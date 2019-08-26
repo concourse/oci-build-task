@@ -1,6 +1,6 @@
 name: CI
 
-on: [push]
+on: [push, release]
 
 jobs:
   test:
