@@ -21,3 +21,16 @@ jobs:
       with:
         name: image
         path: image
+
+  push-image:
+    needs: [build-image]
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - uses: actions/download-artifact@v1
+      with: {name: image}
+    - uses: docker://concourse/registry-image-resource
+      with: {entrypoint: scripts/push-image}
+      env:
+        DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+        DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}

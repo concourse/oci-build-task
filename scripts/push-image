@@ -1,0 +1,19 @@
+#!/bin/bash
+
+set -e -u
+
+tag=$(echo $GITHUB_REF | sed 's|refs/heads/||')
+
+exec /opt/resource/out . <<EOF
+{
+  "source": {
+    "repository": "vito/oci-build-task",
+    "tag": "$tag",
+    "username": "$DOCKER_USERNAME",
+    "password": "$DOCKER_PASSWORD"
+  },
+  "params": {
+    "image": "image/image.tar"
+  }
+}
+EOF
