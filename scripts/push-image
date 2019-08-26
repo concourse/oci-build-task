@@ -2,7 +2,7 @@
 
 set -e -u
 
-echo $GITHUB_SHA > additional_tags
+touch additional_tags
 
 case $GITHUB_REF in
   refs/heads/*)
