@@ -11,7 +11,7 @@ case $GITHUB_REF in
 
   refs/tags/v[0-9]*)
     tag=latest
-    version=$(echo $1 | sed 's|refs/tags/v||')
+    version=$(echo $GITHUB_REF | sed 's|refs/tags/v||')
 
     {
       echo $version | cut -d. -f1
