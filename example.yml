@@ -5,6 +5,7 @@ image_resource:
   type: registry-image
   source:
     repository: vito/oci-build-task
+    tag: master
 
 inputs:
 - name: context
