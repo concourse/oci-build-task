@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"os"
 
-	task "github.com/concourse/builder-task"
+	task "github.com/vito/oci-build-task"
 	"github.com/sirupsen/logrus"
 	"github.com/u-root/u-root/pkg/termios"
 )

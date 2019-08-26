@@ -7,10 +7,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	task "github.com/concourse/builder-task"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	task "github.com/vito/oci-build-task"
 )
 
 type TaskSuite struct {
@@ -35,7 +35,7 @@ func (s *TaskSuite) TearDownSuite() {
 
 func (s *TaskSuite) SetupTest() {
 	var err error
-	s.outputsDir, err = ioutil.TempDir("", "builder-task-test")
+	s.outputsDir, err = ioutil.TempDir("", "oci-build-task-test")
 	s.NoError(err)
 
 	err = os.Mkdir(s.imagePath(), 0755)

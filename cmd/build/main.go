@@ -7,8 +7,8 @@ import (
 	"os/exec"
 	"strings"
 
-	task "github.com/concourse/builder-task"
 	"github.com/sirupsen/logrus"
+	task "github.com/vito/oci-build-task"
 	"github.com/vrischmann/envconfig"
 )
 
@@ -39,7 +39,7 @@ func main() {
 	reqPayload, err := json.Marshal(req)
 	failIf("marshal request", err)
 
-	task := exec.Command("builder-task")
+	task := exec.Command("task")
 	task.Stdin = bytes.NewBuffer(reqPayload)
 	task.Stdout = os.Stdout
 	task.Stderr = os.Stderr

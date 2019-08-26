@@ -7,13 +7,13 @@ FROM concourse/golang-builder AS builder
   RUN --mount=type=cache,target=/root/.cache/go-build go get -d ./...
   COPY . /src
   ENV CGO_ENABLED 0
-  RUN go build -o /assets/builder-task ./cmd/builder-task
+  RUN go build -o /assets/task ./cmd/task
   RUN go build -o /assets/build ./cmd/build
 
 FROM moby/buildkit:master AS task
-  COPY --from=builder /assets/builder-task /usr/bin/
+  COPY --from=builder /assets/task /usr/bin/
   COPY --from=builder /assets/build /usr/bin/
   COPY bin/setup-cgroups /usr/bin/
-  ENTRYPOINT ["builder-task"]
+  ENTRYPOINT ["task"]
 
 FROM task
