@@ -59,6 +59,16 @@ func (s *TaskSuite) TestBasicBuild() {
 	s.NoError(err)
 }
 
+func (s *TaskSuite) TestNoOutputBuild() {
+	s.req.Config.ContextDir = "testdata/basic"
+
+	err := os.RemoveAll(s.imagePath())
+	s.NoError(err)
+
+	_, err = s.build()
+	s.NoError(err)
+}
+
 func (s *TaskSuite) TestDigestFile() {
 	s.req.Config.ContextDir = "testdata/basic"
 

@@ -33,9 +33,6 @@ func Build(buildkitd *Buildkitd, outputsDir string, req Request) (Response, erro
 		Outputs: []string{"image", "cache"},
 	}
 
-	imagePath := filepath.Join(imageDir, "image.tar")
-	digestPath := filepath.Join(imageDir, "digest")
-
 	dockerfileDir := filepath.Dir(cfg.DockerfilePath)
 	dockerfileName := filepath.Base(cfg.DockerfilePath)
 
@@ -48,7 +45,11 @@ func Build(buildkitd *Buildkitd, outputsDir string, req Request) (Response, erro
 		"--opt", "filename=" + dockerfileName,
 	}
 
+	var imagePath, digestPath string
 	if _, err := os.Stat(imageDir); err == nil {
+		imagePath = filepath.Join(imageDir, "image.tar")
+		digestPath = filepath.Join(imageDir, "digest")
+
 		buildctlArgs = append(buildctlArgs,
 			"--output", "type=docker,dest="+imagePath,
 		)
@@ -87,25 +88,27 @@ func Build(buildkitd *Buildkitd, outputsDir string, req Request) (Response, erro
 		return Response{}, errors.Wrap(err, "build")
 	}
 
-	image, err := tarball.ImageFromPath(imagePath, nil)
-	if err != nil {
-		return Response{}, errors.Wrap(err, "open oci image")
-	}
-
-	manifest, err := image.Manifest()
-	if err != nil {
-		return Response{}, errors.Wrap(err, "get image digest")
-	}
-
-	err = ioutil.WriteFile(digestPath, []byte(manifest.Config.Digest.String()), 0644)
-	if err != nil {
-		return Response{}, errors.Wrap(err, "write digest")
-	}
-
-	if req.Config.UnpackRootfs {
-		err = unpackRootfs(imageDir, image, cfg)
+	if imagePath != "" {
+		image, err := tarball.ImageFromPath(imagePath, nil)
 		if err != nil {
-			return Response{}, errors.Wrap(err, "unpack rootfs")
+			return Response{}, errors.Wrap(err, "open oci image")
+		}
+
+		manifest, err := image.Manifest()
+		if err != nil {
+			return Response{}, errors.Wrap(err, "get image digest")
+		}
+
+		err = ioutil.WriteFile(digestPath, []byte(manifest.Config.Digest.String()), 0644)
+		if err != nil {
+			return Response{}, errors.Wrap(err, "write digest")
+		}
+
+		if req.Config.UnpackRootfs {
+			err = unpackRootfs(imageDir, image, cfg)
+			if err != nil {
+				return Response{}, errors.Wrap(err, "unpack rootfs")
+			}
 		}
 	}
 
