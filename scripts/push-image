@@ -40,7 +40,7 @@ exec /opt/resource/out . <<EOF
   },
   "params": {
     "image": "./image/image.tar",
-    "additional-tags": "./additional_tags"
+    "additional_tags": "./additional_tags"
   }
 }
 EOF
