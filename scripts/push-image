@@ -2,7 +2,33 @@
 
 set -e -u
 
-tag=$(echo $GITHUB_REF | sed 's|refs/heads/||')
+echo $GITHUB_SHA > additional_tags
+
+case $GITHUB_REF in
+  refs/heads/*)
+    tag=$(echo $GITHUB_REF | sed 's|refs/heads/||')
+    ;;
+
+  refs/tags/v[0-9]*)
+    tag=latest
+    version=$(echo $1 | sed 's|refs/tags/v||')
+
+    {
+      echo $version | cut -d. -f1
+      echo $version | cut -d. -f1,2
+      echo $version | cut -d. -f1,2,3
+    } | uniq >> additional_tags
+
+    ;;
+
+  refs/tags/*)
+    tag=$(echo $GITHUB_REF | sed 's|refs/tags/||')
+    ;;
+
+  *)
+    tag=$GITHUB_SHA
+    ;;
+esac
 
 exec /opt/resource/out . <<EOF
 {
@@ -13,7 +39,8 @@ exec /opt/resource/out . <<EOF
     "password": "$DOCKER_PASSWORD"
   },
   "params": {
-    "image": "image/image.tar"
+    "image": "./image/image.tar",
+    "additional-tags": "./additional_tags"
   }
 }
 EOF
