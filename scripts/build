@@ -1,0 +1,7 @@
+#!/bin/bash
+
+set -e -u
+
+export CGO_ENABLED=0
+go build -o bin/builder-task ./cmd/builder-task
+go build -o bin/build ./cmd/build

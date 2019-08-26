@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e -u
+set -e -u -x
 
 cd $(dirname $0)/..
 
@@ -8,4 +8,6 @@ export PATH=$PWD/bin:$PATH
 
 . ./scripts/setup-buildkit.sh
 
-go test "$@"
+mkdir -p image
+
+build

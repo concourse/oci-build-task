@@ -1,7 +1,10 @@
 # created by scripts/test
-bin/buildctl
-bin/buildkitd
-bin/buildkit-runc
-bin/rootlessctl
-bin/rootlesskit
-bin/rootlesskit-docker-proxy
+/bin/buildctl
+/bin/buildkitd
+/bin/buildkit-runc
+/bin/rootlessctl
+/bin/rootlesskit
+/bin/rootlesskit-docker-proxy
+/bin/build
+/bin/builder-task
+/image

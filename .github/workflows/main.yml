@@ -1,0 +1,23 @@
+name: CI
+
+on: [push]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+      with: {submodules: true}
+    - run: scripts/test
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+      with: {submodules: true}
+    - run: scripts/build
+    - run: scripts/build-image
+    - uses: actions/upload-artifact@v1
+      with:
+        name: image
+        path: image
