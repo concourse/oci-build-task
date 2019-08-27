@@ -9,18 +9,18 @@ it currently still requires it.
 
 <!-- toc -->
 
-- [differences from `builder-task`](#differences-from-builder-task)
-- [task config](#task-config)
+- [usage](#usage)
   * [`image_resource`](#image_resource)
   * [`params`](#params)
   * [`inputs`](#inputs)
   * [`outputs`](#outputs)
   * [`caches`](#caches)
   * [`run`](#run)
+- [migrating from the `docker-image` resource](#migrating-from-the-docker-image-resource)
+- [differences from [`builder` task](https://github.com/concourse/builder-task)](#differences-from-builder-taskhttpsgithubcomconcoursebuilder-task)
 - [example](#example)
 
 <!-- tocstop -->
-
 
 ## usage
 
