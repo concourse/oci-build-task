@@ -9,6 +9,18 @@ it currently still requires it.
 
 <!-- toc -->
 
+- [usage](#usage)
+  * [`image_resource`](#image_resource)
+  * [`params`](#params)
+  * [`inputs`](#inputs)
+  * [`outputs`](#outputs)
+  * [`caches`](#caches)
+  * [`run`](#run)
+- [migrating from the `docker-image` resource](#migrating-from-the-docker-image-resource)
+- [differences from `builder` task](#differences-from-builder-task)
+- [example](#example)
+
+<!-- tocstop -->
 
 ## usage
 
