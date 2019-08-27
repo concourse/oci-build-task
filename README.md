@@ -9,18 +9,6 @@ it currently still requires it.
 
 <!-- toc -->
 
-- [usage](#usage)
-  * [`image_resource`](#image_resource)
-  * [`params`](#params)
-  * [`inputs`](#inputs)
-  * [`outputs`](#outputs)
-  * [`caches`](#caches)
-  * [`run`](#run)
-- [migrating from the `docker-image` resource](#migrating-from-the-docker-image-resource)
-- [differences from [`builder` task](https://github.com/concourse/builder-task)](#differences-from-builder-taskhttpsgithubcomconcoursebuilder-task)
-- [example](#example)
-
-<!-- tocstop -->
 
 ## usage
 
@@ -255,11 +243,11 @@ jobs:
 ```
 
 
-## differences from [`builder` task](https://github.com/concourse/builder-task)
+## differences from `builder` task
 
-The `builder` task was a stepping stone that led to the `oci-build` task. It is
-now deprecated. The transition should be relatively smooth, with the following
-differences:
+The [`builder` task](https://github.com/concourse/builder-task) was a stepping
+stone that led to the `oci-build` task. It is now deprecated. The transition
+should be relatively smooth, with the following differences:
 
 * The `oci-build` task does not support configuring `$REPOSITORY` or `$TAG`.
   * for running the image with `docker`, a `digest` file is provided which can
