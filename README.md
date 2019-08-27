@@ -21,29 +21,18 @@ it currently still requires it.
 
 <!-- tocstop -->
 
-## differences from `builder-task`
 
-* simpler and more efficient caching implementation
-* does not support configuring `$REPOSITORY` or `$TAG`
-  * for running the image with `docker`, a `digest` file is provided which can
-    be tagged with `docker tag`
-  * for pushing the image, the repository and tag are configured in the
-    [`registry-image`
-    resource](https://github.com/concourse/registry-image-resource)
-* written in Go, with tests!
-* uses `buildkit` directly
+## usage
 
-## task config
-
-The task implementation is available as
-[`concourse/oci-build-task`](http://hub.docker.com/r/concourse/oci-build-task),
-which is built from [`Dockerfile`](Dockerfile).
+The task implementation is available as an image on Docker Hub at
+[`vito/oci-build-task`](http://hub.docker.com/r/vito/oci-build-task). (This
+image is built from [`Dockerfile`](Dockerfile) using the `oci-build` task
+itself.)
 
 This task implementation started as a spike to explore patterns around
-[reusable tasks](https://github.com/concourse/rfcs/issues/7) in service of
-coming up with ideas for a proper RFC. Until that RFC is written and
-implemented, configuration is still done by way of providing your own task
-config as follows:
+[reusable tasks](https://github.com/concourse/rfcs/issues/7) to hopefully lead
+to a proper RFC. Until that RFC is written and implemented, configuration is
+still done by way of providing your own task config as follows:
 
 ### `image_resource`
 
@@ -53,7 +42,7 @@ First, your task needs to point to the `oci-build-task` image:
 image_resource:
   type: registry-image
   source:
-    repository: concourse/oci-build-task
+    repository: vito/oci-build-task
 ```
 
 ### `params`
@@ -208,6 +197,81 @@ Your task should run the `build` executable:
 run:
   path: build
 ```
+
+
+## migrating from the `docker-image` resource
+
+The `docker-image` resource was previously used for building and pushing a
+Docker image to a registry in one fell swoop.
+
+The `oci-build` task, in contrast, only supports building images - it does not
+support pushing or even tagging the image. It can be used to build an image and
+use it for a subsequent task image without pushing it to a registry, by
+configuring `$UNPACK_ROOTFS`.
+
+In order to push the newly built image, you can use a resource like the
+[`registry-image`
+resource](https://github.com/concourse/registry-image-resource) like so:
+
+```yaml
+resources:
+- get: my-image-src
+  type: git
+  source:
+    uri: https://github.com/...
+
+- name: my-image
+  type: registry-image
+  source:
+    repository: my-user/my-repo
+
+jobs:
+- name: build-and-push
+  plan:
+  # fetch repository source (containing Dockerfile)
+  - get: my-image-src
+
+  # build using `oci-build` task
+  #
+  # note: this task config could be pushed into `my-image-src` and loaded using
+  # `file:` instead
+  - task: build
+    config:
+      platform: linux
+
+      image_resource:
+        repository: vito/oci-build-task
+
+      inputs:
+      - name: my-image-src
+        path: .
+
+      outputs:
+      - name: image
+
+  # push using `registry-image` resource
+  - put: my-image
+    params: {image: image/image.tar}
+```
+
+
+## differences from [`builder` task](https://github.com/concourse/builder-task)
+
+The `builder` task was a stepping stone that led to the `oci-build` task. It is
+now deprecated. The transition should be relatively smooth, with the following
+differences:
+
+* The `oci-build` task does not support configuring `$REPOSITORY` or `$TAG`.
+  * for running the image with `docker`, a `digest` file is provided which can
+    be tagged with `docker tag`
+  * for pushing the image, the repository and tag are configured in the
+    [`registry-image`
+    resource](https://github.com/concourse/registry-image-resource)
+* The `oci-build` task has a more efficient caching implementation. By using
+  `buildkit` directly we can make use of its `local` cache exporter/importer,
+  which doesn't require a separate translation step for saving into the task
+  cache.
+* This task is written in Go instead of Bash, and has tests!
 
 
 ## example
