@@ -240,7 +240,9 @@ jobs:
       platform: linux
 
       image_resource:
-        repository: vito/oci-build-task
+        type: registry-image
+        source:
+          repository: vito/oci-build-task
 
       inputs:
       - name: my-image-src
@@ -248,6 +250,9 @@ jobs:
 
       outputs:
       - name: image
+
+      run:
+        path: build
 
   # push using `registry-image` resource
   - put: my-image
