@@ -236,6 +236,7 @@ jobs:
   # note: this task config could be pushed into `my-image-src` and loaded using
   # `file:` instead
   - task: build
+    privileged: true
     config:
       platform: linux
 
