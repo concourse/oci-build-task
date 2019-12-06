@@ -59,6 +59,8 @@ type Config struct {
 	//
 	// Theoretically this would go away if/when we standardize on OCI.
 	UnpackRootfs bool `json:"unpack_rootfs" envconfig:"optional"`
+
+	RegistryCache string `json:"registry_cache"      envconfig:"optional"`
 }
 
 // ImageMetadata is the schema written to manifest.json when producing the

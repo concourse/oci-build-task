@@ -55,13 +55,21 @@ func Build(buildkitd *Buildkitd, outputsDir string, req Request) (Response, erro
 		)
 	}
 
-	if _, err := os.Stat(cacheDir); err == nil {
+	if cfg.RegistryCache != "" {
+		buildctlArgs = append(buildctlArgs,
+			"--export-cache", "type=registry,ref="+cfg.RegistryCache,
+		)
+	} else if _, err := os.Stat(cacheDir); err == nil {
 		buildctlArgs = append(buildctlArgs,
 			"--export-cache", "type=local,mode=min,dest="+cacheDir,
 		)
 	}
 
-	if _, err := os.Stat(filepath.Join(cacheDir, "index.json")); err == nil {
+	if cfg.RegistryCache != "" {
+		buildctlArgs = append(buildctlArgs,
+			"--import-cache", "type=registry,ref="+cfg.RegistryCache,
+		)
+	} else if _, err := os.Stat(filepath.Join(cacheDir, "index.json")); err == nil {
 		buildctlArgs = append(buildctlArgs,
 			"--import-cache", "type=local,src="+cacheDir,
 		)
