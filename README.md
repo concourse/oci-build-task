@@ -289,3 +289,5 @@ itself:
 fly -t dev execute -c example.yml -o image=. -p
 docker load -i image.tar
 ```
+
+That `-p` at the end is not a typo; it runs the task with elevated privileges.
