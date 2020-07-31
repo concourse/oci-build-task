@@ -215,7 +215,7 @@ resource](https://github.com/concourse/registry-image-resource) like so:
 
 ```yaml
 resources:
-- get: my-image-src
+- name: my-image-src
   type: git
   source:
     uri: https://github.com/...
