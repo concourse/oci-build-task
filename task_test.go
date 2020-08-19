@@ -103,6 +103,14 @@ func (s *TaskSuite) TestTarget() {
 	s.NoError(err)
 }
 
+func (s *TaskSuite) TestBuildkitSSH() {
+	s.req.Config.ContextDir = "testdata/buildkit-ssh"
+	s.req.Config.BuildkitSSH = "my_ssh_key=./id_rsa_test"
+
+	_, err := s.build()
+	s.NoError(err)
+}
+
 func (s *TaskSuite) TestTargetFile() {
 	s.req.Config.ContextDir = "testdata/multi-target"
 	s.req.Config.TargetFile = "testdata/multi-target/target_file"

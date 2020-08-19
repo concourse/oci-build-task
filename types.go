@@ -48,6 +48,7 @@ type Config struct {
 
 	ContextDir     string `json:"context"              envconfig:"CONTEXT,optional"`
 	DockerfilePath string `json:"dockerfile,omitempty" envconfig:"DOCKERFILE,optional"`
+	BuildkitSSH    string `json:"buildkit_ssh"         envconfig:"optional"`
 
 	Target     string `json:"target"      envconfig:"optional"`
 	TargetFile string `json:"target_file" envconfig:"optional"`
