@@ -1,0 +1,19 @@
+name: PR
+
+on: pull_request
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+      with: {submodules: true}
+    - run: scripts/test
+
+  build-image:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+      with: {submodules: true}
+    - run: scripts/build
+    - run: scripts/build-image

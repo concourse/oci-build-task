@@ -1,6 +1,6 @@
 name: CI
 
-on: [push, pull_request]
+on: push
 
 jobs:
   test:
@@ -23,7 +23,6 @@ jobs:
         path: image
 
   push-image:
-    if: ${{ github.event == "push" }}
     needs: [build-image]
     runs-on: ubuntu-latest
     steps:
