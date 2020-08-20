@@ -25,6 +25,10 @@ case $GITHUB_REF in
     tag=$(echo $GITHUB_REF | sed 's|refs/tags/||')
     ;;
 
+  refs/pull/[0-9]*/merge)
+    tag=pr$(echo $GITHUB_REF | sed 's|refs/pull/\([0-9]\+\)/merge|\1|')
+    ;;
+
   *)
     tag=$GITHUB_SHA
     ;;
