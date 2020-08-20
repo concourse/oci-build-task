@@ -23,6 +23,7 @@ jobs:
         path: image
 
   push-image:
+    if: ${{ github.event == "push" }}
     needs: [build-image]
     runs-on: ubuntu-latest
     steps:
