@@ -242,6 +242,14 @@ func (s *TaskSuite) TestUnpackRootfs() {
 	s.Equal(meta.Env, []string{"PATH=/darkness", "BA=nana"})
 }
 
+func (s *TaskSuite) TestBuildkitSecrets() {
+	s.req.Config.ContextDir = "testdata/buildkit-secret"
+	s.req.Config.BuildkitSecrets = map[string]string{"secret": "testdata/buildkit-secret/secret"}
+
+	_, err := s.build()
+	s.NoError(err)
+}
+
 func (s *TaskSuite) TestRegistryMirrors() {
 	mirror := httptest.NewServer(registry.New())
 	defer mirror.Close()
