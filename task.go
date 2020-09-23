@@ -87,6 +87,12 @@ func Build(buildkitd *Buildkitd, outputsDir string, req Request) (Response, erro
 		)
 	}
 
+	for id, src := range cfg.BuildkitSecrets {
+		buildctlArgs = append(buildctlArgs,
+			"--secret", "id="+id+",src="+src,
+		)
+	}
+
 	var builds [][]string
 	var targets []string
 	var imagePaths []string
