@@ -55,7 +55,7 @@ type Config struct {
 	BuildArgs     []string `json:"build_args"      envconfig:"optional"`
 	BuildArgsFile string   `json:"build_args_file" envconfig:"optional"`
 
-	Mirrors []string `json:"mirrors" envconfig:"optional"`
+	Mirrors []string `json:"mirrors" envconfig:"MIRRORS,optional"`
 
 	// Unpack the OCI image into Concourse's rootfs/ + metadata.json image scheme.
 	//
