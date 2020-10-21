@@ -74,6 +74,8 @@ Next, any of the following optional parameters may be specified:
 * `$TARGET_FILE` (default empty): path to a file containing the name of the
   target build stage to build.
 
+* `$REGISTRY_MIRRORS` (default empty): registry mirrors to use for `docker.io`.
+
 * `$UNPACK_ROOTFS` (default `false`): unpack the image as Concourse's image
   format (`rootfs/`, `metadata.json`) for use with the [`image` task step
   option](https://concourse-ci.org/task-step.html#task-step-image).
