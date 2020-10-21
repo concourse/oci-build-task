@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/BurntSushi/toml"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -19,19 +20,20 @@ type Buildkitd struct {
 	Addr string
 
 	rootDir string
-	opts    BuildkitdOpts
+	opts    *BuildkitdOpts
 	proc    *os.Process
 }
 
 // BuildkitdOpts to provide to Buildkitd
 type BuildkitdOpts struct {
-	Config BuildkitdConfig
+	Config     *BuildkitdConfig
+	ConfigPath string
 }
 
 func SpawnBuildkitd(opts *BuildkitdOpts) (*Buildkitd, error) {
 	buildkitd := Buildkitd{}
 	if opts != nil {
-		buildkitd.opts = *opts
+		buildkitd.opts = opts
 	}
 
 	err := run(os.Stdout, "setup-cgroups")
@@ -39,7 +41,7 @@ func SpawnBuildkitd(opts *BuildkitdOpts) (*Buildkitd, error) {
 		return nil, errors.Wrap(err, "setup cgroups")
 	}
 
-	err = generateConfig(buildkitd.opts.Config)
+	err = buildkitd.generateConfig()
 	if err != nil {
 		return nil, errors.Wrap(err, "generate config")
 	}
@@ -134,6 +136,36 @@ func (buildkitd *Buildkitd) Cleanup() error {
 	return nil
 }
 
+func (buildkitd Buildkitd) generateConfig() error {
+	if buildkitd.opts == nil || buildkitd.opts.Config == nil {
+		return nil
+	}
+
+	if buildkitd.opts.ConfigPath == "" {
+		buildkitd.opts.ConfigPath = "/etc/buildkit/buildkitd.toml"
+	}
+
+	configDirPath := filepath.Dir(buildkitd.opts.ConfigPath)
+	if _, err := os.Stat(configDirPath); err != nil {
+		err := os.Mkdir(configDirPath, 0755)
+		if err != nil {
+			return err
+		}
+	}
+
+	f, err := os.OpenFile(buildkitd.opts.ConfigPath, os.O_RDWR|os.O_CREATE, 0644)
+	if err != nil {
+		return err
+	}
+
+	err = toml.NewEncoder(f).Encode(buildkitd.opts.Config)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func dumpLogFile(logPath string) {
 	logFile, err := os.Open(logPath)
 	if err != nil {
@@ -151,8 +183,4 @@ func dumpLogFile(logPath string) {
 	if err != nil {
 		logrus.Warn("error closing log file:", err)
 	}
-}
-
-func generateConfig(config BuildkitdConfig) error {
-	return nil
 }

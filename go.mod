@@ -3,6 +3,7 @@ module github.com/vito/oci-build-task
 go 1.12
 
 require (
+	github.com/BurntSushi/toml v0.3.1
 	github.com/VividCortex/ewma v1.1.1 // indirect
 	github.com/concourse/go-archive v1.0.1
 	github.com/fatih/color v1.7.0
