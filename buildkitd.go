@@ -163,11 +163,12 @@ func (buildkitd Buildkitd) generateConfig() error {
 		return nil
 	}
 
-	if buildkitd.opts == nil || buildkitd.opts.ConfigPath == "" {
-		buildkitd.opts.ConfigPath = "/etc/buildkit/buildkitd.toml"
+	configPath := "/etc/buildkit/buildkitd.toml"
+	if buildkitd.opts != nil && buildkitd.opts.ConfigPath != "" {
+		configPath = buildkitd.opts.ConfigPath
 	}
 
-	configDirPath := filepath.Dir(buildkitd.opts.ConfigPath)
+	configDirPath := filepath.Dir(configPath)
 	if _, err := os.Stat(configDirPath); err != nil {
 		err := os.Mkdir(configDirPath, 0755)
 		if err != nil {
@@ -175,7 +176,7 @@ func (buildkitd Buildkitd) generateConfig() error {
 		}
 	}
 
-	f, err := os.OpenFile(buildkitd.opts.ConfigPath, os.O_RDWR|os.O_CREATE, 0644)
+	f, err := os.OpenFile(configPath, os.O_RDWR|os.O_CREATE, 0644)
 	if err != nil {
 		return err
 	}
