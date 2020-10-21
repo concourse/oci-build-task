@@ -142,11 +142,11 @@ func (buildkitd *Buildkitd) setConfigFromRequest(req Request) {
 	var config BuildkitdConfig
 	var configSet bool
 
-	if len(req.Config.Mirrors) > 0 {
+	if len(req.Config.RegistryMirrors) > 0 {
 		var registryConfigs map[string]RegistryConfig
 		registryConfigs = make(map[string]RegistryConfig)
 		registryConfigs["docker.io"] = RegistryConfig{
-			Mirrors: req.Config.Mirrors,
+			Mirrors: req.Config.RegistryMirrors,
 		}
 
 		config.Registries = registryConfigs

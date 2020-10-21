@@ -55,7 +55,7 @@ func (s *BuildkitdSuite) TestNoConfig() {
 func (s *BuildkitdSuite) TestGenerateConfig() {
 	var err error
 
-	s.req.Config.Mirrors = []string{"hub.docker.io"}
+	s.req.Config.RegistryMirrors = []string{"hub.docker.io"}
 
 	s.buildkitd, err = task.SpawnBuildkitd(s.req, &task.BuildkitdOpts{
 		ConfigPath: s.configPath("mirrors.toml"),
