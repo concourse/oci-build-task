@@ -55,25 +55,9 @@ func (s *BuildkitdSuite) TestNoConfig() {
 func (s *BuildkitdSuite) TestGenerateConfig() {
 	var err error
 
-	var registryConfigs map[string]task.RegistryConfig
-	registryConfigs = make(map[string]task.RegistryConfig)
-	registryConfigs["docker.io"] = task.RegistryConfig{
-		Mirrors:   []string{"hub.docker.io"},
-		PlainHTTP: &[]bool{true}[0],
-		Insecure:  &[]bool{true}[0],
-		RootCAs:   []string{"/etc/config/myca.pem"},
-		KeyPairs: []task.TLSKeyPair{
-			{
-				Key:         "/etc/config/key.pem",
-				Certificate: "/etc/config/cert.pem",
-			},
-		},
-	}
+	s.req.Config.Mirrors = []string{"hub.docker.io"}
 
-	s.buildkitd, err = task.SpawnBuildkitd(&task.BuildkitdOpts{
-		Config: &task.BuildkitdConfig{
-			Registries: registryConfigs,
-		},
+	s.buildkitd, err = task.SpawnBuildkitd(s.req, &task.BuildkitdOpts{
 		ConfigPath: s.configPath("mirrors.toml"),
 	})
 	s.NoError(err)

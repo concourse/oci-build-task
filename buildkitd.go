@@ -19,6 +19,7 @@ import (
 type Buildkitd struct {
 	Addr string
 
+	config  *BuildkitdConfig
 	rootDir string
 	opts    *BuildkitdOpts
 	proc    *os.Process
@@ -26,11 +27,10 @@ type Buildkitd struct {
 
 // BuildkitdOpts to provide to Buildkitd
 type BuildkitdOpts struct {
-	Config     *BuildkitdConfig
 	ConfigPath string
 }
 
-func SpawnBuildkitd(opts *BuildkitdOpts) (*Buildkitd, error) {
+func SpawnBuildkitd(req Request, opts *BuildkitdOpts) (*Buildkitd, error) {
 	buildkitd := Buildkitd{}
 	if opts != nil {
 		buildkitd.opts = opts
@@ -40,6 +40,8 @@ func SpawnBuildkitd(opts *BuildkitdOpts) (*Buildkitd, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "setup cgroups")
 	}
+
+	buildkitd.setConfigFromRequest(req)
 
 	err = buildkitd.generateConfig()
 	if err != nil {
@@ -136,12 +138,32 @@ func (buildkitd *Buildkitd) Cleanup() error {
 	return nil
 }
 
+func (buildkitd *Buildkitd) setConfigFromRequest(req Request) {
+	var config BuildkitdConfig
+	var configSet bool
+
+	if len(req.Config.Mirrors) > 0 {
+		var registryConfigs map[string]RegistryConfig
+		registryConfigs = make(map[string]RegistryConfig)
+		registryConfigs["docker.io"] = RegistryConfig{
+			Mirrors: req.Config.Mirrors,
+		}
+
+		config.Registries = registryConfigs
+		configSet = true
+	}
+
+	if configSet {
+		buildkitd.config = &config
+	}
+}
+
 func (buildkitd Buildkitd) generateConfig() error {
-	if buildkitd.opts == nil || buildkitd.opts.Config == nil {
+	if buildkitd.config == nil {
 		return nil
 	}
 
-	if buildkitd.opts.ConfigPath == "" {
+	if buildkitd.opts == nil || buildkitd.opts.ConfigPath == "" {
 		buildkitd.opts.ConfigPath = "/etc/buildkit/buildkitd.toml"
 	}
 
@@ -158,7 +180,7 @@ func (buildkitd Buildkitd) generateConfig() error {
 		return err
 	}
 
-	err = toml.NewEncoder(f).Encode(buildkitd.opts.Config)
+	err = toml.NewEncoder(f).Encode(buildkitd.config)
 	if err != nil {
 		return err
 	}

@@ -29,7 +29,7 @@ func main() {
 		}
 	}
 
-	buildkitd, err := task.SpawnBuildkitd(nil)
+	buildkitd, err := task.SpawnBuildkitd(req, nil)
 	failIf("start buildkitd", err)
 
 	res, err := task.Build(buildkitd, wd, req)
