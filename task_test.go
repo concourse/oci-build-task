@@ -24,7 +24,7 @@ type TaskSuite struct {
 
 func (s *TaskSuite) SetupSuite() {
 	var err error
-	s.buildkitd, err = task.SpawnBuildkitd()
+	s.buildkitd, err = task.SpawnBuildkitd(nil)
 	s.NoError(err)
 }
 

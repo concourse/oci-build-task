@@ -19,32 +19,48 @@ type Buildkitd struct {
 	Addr string
 
 	rootDir string
+	opts    BuildkitdOpts
 	proc    *os.Process
 }
 
-func SpawnBuildkitd() (*Buildkitd, error) {
+// BuildkitdOpts to provide to Buildkitd
+type BuildkitdOpts struct {
+	Config BuildkitdConfig
+}
+
+func SpawnBuildkitd(opts *BuildkitdOpts) (*Buildkitd, error) {
+	buildkitd := Buildkitd{}
+	if opts != nil {
+		buildkitd.opts = *opts
+	}
+
 	err := run(os.Stdout, "setup-cgroups")
 	if err != nil {
 		return nil, errors.Wrap(err, "setup cgroups")
 	}
 
-	rootDir := filepath.Join(os.TempDir(), "buildkitd")
-	err = os.MkdirAll(rootDir, 0755)
+	err = generateConfig(buildkitd.opts.Config)
+	if err != nil {
+		return nil, errors.Wrap(err, "generate config")
+	}
+
+	buildkitd.rootDir = filepath.Join(os.TempDir(), "buildkitd")
+	err = os.MkdirAll(buildkitd.rootDir, 0755)
 	if err != nil {
 		return nil, errors.Wrap(err, "create root dir")
 	}
 
-	sockPath := filepath.Join(rootDir, "buildkitd.sock")
-	logPath := filepath.Join(rootDir, "buildkitd.log")
+	sockPath := filepath.Join(buildkitd.rootDir, "buildkitd.sock")
+	logPath := filepath.Join(buildkitd.rootDir, "buildkitd.log")
 
-	addr := (&url.URL{
+	buildkitd.Addr = (&url.URL{
 		Scheme: "unix",
 		Path:   sockPath,
 	}).String()
 
 	buildkitdFlags := []string{
-		"--root", rootDir,
-		"--addr", addr,
+		"--root", buildkitd.rootDir,
+		"--addr", buildkitd.Addr,
 	}
 
 	var cmd *exec.Cmd
@@ -78,7 +94,7 @@ func SpawnBuildkitd() (*Buildkitd, error) {
 	}
 
 	for {
-		err := buildctl(addr, ioutil.Discard, "debug", "workers")
+		err := buildctl(buildkitd.Addr, ioutil.Discard, "debug", "workers")
 		if err == nil {
 			break
 		}
@@ -100,12 +116,8 @@ func SpawnBuildkitd() (*Buildkitd, error) {
 
 	logrus.Debug("buildkitd started")
 
-	return &Buildkitd{
-		Addr: addr,
-
-		rootDir: rootDir,
-		proc:    cmd.Process,
-	}, nil
+	buildkitd.proc = cmd.Process
+	return &buildkitd, nil
 }
 
 func (buildkitd *Buildkitd) Cleanup() error {
@@ -139,4 +151,8 @@ func dumpLogFile(logPath string) {
 	if err != nil {
 		logrus.Warn("error closing log file:", err)
 	}
+}
+
+func generateConfig(config BuildkitdConfig) error {
+	return nil
 }
