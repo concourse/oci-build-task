@@ -79,6 +79,12 @@ func Build(buildkitd *Buildkitd, outputsDir string, req Request) (Response, erro
 		)
 	}
 
+	for _, arg := range cfg.Labels {
+		buildctlArgs = append(buildctlArgs,
+			"--opt", "label:"+arg,
+		)
+	}
+
 	logrus.WithFields(logrus.Fields{
 		"buildctl-args": buildctlArgs,
 	}).Debug("building")
@@ -192,6 +198,22 @@ func sanitize(cfg *Config) error {
 			}
 
 			cfg.BuildArgs = append(cfg.BuildArgs, arg)
+		}
+	}
+
+	if cfg.LabelsFile != "" {
+		Labels, err := ioutil.ReadFile(cfg.LabelsFile)
+		if err != nil {
+			return errors.Wrap(err, "read labels file")
+		}
+
+		for _, arg := range strings.Split(string(Labels), "\n") {
+			if len(arg) == 0 {
+				// skip blank lines
+				continue
+			}
+
+			cfg.Labels = append(cfg.Labels, arg)
 		}
 	}
 

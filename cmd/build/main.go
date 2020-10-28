@@ -13,6 +13,7 @@ import (
 )
 
 const buildArgPrefix = "BUILD_ARG_"
+const labelPrefix = "LABEL_"
 
 func main() {
 	req := task.Request{
@@ -22,16 +23,20 @@ func main() {
 	err := envconfig.Init(&req.Config)
 	failIf("parse config from env", err)
 
-	// carry over BUILD_ARG_* vars manually
+	// carry over BUILD_ARG_* and LABEL_* vars manually
 	for _, env := range os.Environ() {
-		if !strings.HasPrefix(env, buildArgPrefix) {
-			continue
+		if strings.HasPrefix(env, buildArgPrefix) {
+			req.Config.BuildArgs = append(
+				req.Config.BuildArgs,
+				strings.TrimPrefix(env, buildArgPrefix),
+			)
 		}
-
-		req.Config.BuildArgs = append(
-			req.Config.BuildArgs,
-			strings.TrimPrefix(env, buildArgPrefix),
-		)
+		if strings.HasPrefix(env, labelPrefix) {
+			req.Config.Labels = append(
+				req.Config.Labels,
+				strings.TrimPrefix(env, labelPrefix),
+			)
+		}
 	}
 
 	logrus.Debugf("read config from env: %#v\n", req.Config)
