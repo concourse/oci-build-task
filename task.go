@@ -36,13 +36,24 @@ func Build(buildkitd *Buildkitd, outputsDir string, req Request) (Response, erro
 	dockerfileDir := filepath.Dir(cfg.DockerfilePath)
 	dockerfileName := filepath.Base(cfg.DockerfilePath)
 
+	var frontend string
+	if cfg.Source == "" {
+		frontend = "dockerfile.v0"
+	} else {
+		frontend = "gateway.v0"
+	}
+
 	buildctlArgs := []string{
 		"build",
 		"--progress", "plain",
-		"--frontend", "dockerfile.v0",
+		"--frontend", frontend,
 		"--local", "context=" + cfg.ContextDir,
 		"--local", "dockerfile=" + dockerfileDir,
 		"--opt", "filename=" + dockerfileName,
+	}
+
+	if cfg.Source != "" {
+		buildctlArgs = append(buildctlArgs, "--opt", "source="+cfg.Source)
 	}
 
 	var imagePath, digestPath string

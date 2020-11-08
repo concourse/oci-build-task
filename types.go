@@ -47,6 +47,7 @@ type Config struct {
 	Debug bool `json:"debug" envconfig:"optional"`
 
 	ContextDir     string `json:"context"              envconfig:"CONTEXT,optional"`
+	Source         string `json:"source,omitempty"     envconfig:"SOURCE,optional"`
 	DockerfilePath string `json:"dockerfile,omitempty" envconfig:"DOCKERFILE,optional"`
 
 	Target     string `json:"target"      envconfig:"optional"`
