@@ -55,6 +55,8 @@ type Config struct {
 	BuildArgs     []string `json:"build_args"      envconfig:"optional"`
 	BuildArgsFile string   `json:"build_args_file" envconfig:"optional"`
 
+	RegistryMirrors []string `json:"registry_mirrors" envconfig:"REGISTRY_MIRRORS,optional"`
+
 	// Unpack the OCI image into Concourse's rootfs/ + metadata.json image scheme.
 	//
 	// Theoretically this would go away if/when we standardize on OCI.
