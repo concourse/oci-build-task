@@ -28,6 +28,7 @@ type Buildkitd struct {
 // BuildkitdOpts to provide to Buildkitd
 type BuildkitdOpts struct {
 	ConfigPath string
+	RootDir    string
 }
 
 func SpawnBuildkitd(req Request, opts *BuildkitdOpts) (*Buildkitd, error) {
@@ -49,6 +50,10 @@ func SpawnBuildkitd(req Request, opts *BuildkitdOpts) (*Buildkitd, error) {
 	}
 
 	buildkitd.rootDir = filepath.Join(os.TempDir(), "buildkitd")
+	if buildkitd.opts != nil && buildkitd.opts.RootDir != "" {
+		buildkitd.rootDir = buildkitd.opts.RootDir
+	}
+
 	err = os.MkdirAll(buildkitd.rootDir, 0755)
 	if err != nil {
 		return nil, errors.Wrap(err, "create root dir")

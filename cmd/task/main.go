@@ -29,7 +29,8 @@ func main() {
 		}
 	}
 
-	buildkitd, err := task.SpawnBuildkitd(req, nil)
+	opts := task.BuildkitdOpts{RootDir: "/scratch/buildkitd"}
+	buildkitd, err := task.SpawnBuildkitd(req, &opts)
 	failIf("start buildkitd", err)
 
 	res, err := task.Build(buildkitd, wd, req)

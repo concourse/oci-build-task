@@ -42,6 +42,17 @@ func (s *BuildkitdSuite) TearDownTest() {
 	s.NoError(err)
 }
 
+func (s *BuildkitdSuite) TestRootDir() {
+	var pathExists bool
+
+	buildkitdDefaultRootDir := "/scratch/buildkitd"
+	if _, err := os.Stat(buildkitdDefaultRootDir); err == nil {
+		pathExists = true
+	}
+
+	s.Assert().False(pathExists)
+}
+
 func (s *BuildkitdSuite) TestNoConfig() {
 	var pathExists bool
 
