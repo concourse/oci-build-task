@@ -22,8 +22,10 @@ type BuildkitdSuite struct {
 }
 
 func (s *BuildkitdSuite) TearDownSuite() {
-	err := s.buildkitd.Cleanup()
-	s.NoError(err)
+	if s.buildkitd != nil {
+		err := s.buildkitd.Cleanup()
+		s.NoError(err)
+	}
 }
 
 func (s *BuildkitdSuite) SetupTest() {
