@@ -19,52 +19,51 @@ import (
 type Buildkitd struct {
 	Addr string
 
-	config  *BuildkitdConfig
 	rootDir string
-	opts    *BuildkitdOpts
 	proc    *os.Process
 }
 
 // BuildkitdOpts to provide to Buildkitd
 type BuildkitdOpts struct {
+	RootDir    string
 	ConfigPath string
 }
 
 func SpawnBuildkitd(req Request, opts *BuildkitdOpts) (*Buildkitd, error) {
-	buildkitd := Buildkitd{}
-	if opts != nil {
-		buildkitd.opts = opts
-	}
-
 	err := run(os.Stdout, "setup-cgroups")
 	if err != nil {
 		return nil, errors.Wrap(err, "setup cgroups")
 	}
 
-	buildkitd.setConfigFromRequest(req)
-
-	err = buildkitd.generateConfig()
-	if err != nil {
-		return nil, errors.Wrap(err, "generate config")
+	rootDir := filepath.Join(os.TempDir(), "buildkitd")
+	if opts != nil && opts.RootDir != "" {
+		rootDir = opts.RootDir
 	}
 
-	buildkitd.rootDir = filepath.Join(os.TempDir(), "buildkitd")
-	err = os.MkdirAll(buildkitd.rootDir, 0755)
+	err = os.MkdirAll(rootDir, 0755)
 	if err != nil {
 		return nil, errors.Wrap(err, "create root dir")
 	}
 
-	sockPath := filepath.Join(buildkitd.rootDir, "buildkitd.sock")
-	logPath := filepath.Join(buildkitd.rootDir, "buildkitd.log")
+	sockPath := filepath.Join(rootDir, "buildkitd.sock")
+	logPath := filepath.Join(rootDir, "buildkitd.log")
 
-	buildkitd.Addr = (&url.URL{
-		Scheme: "unix",
-		Path:   sockPath,
-	}).String()
+	configPath := filepath.Join(rootDir, "builtkitd.toml")
+	if opts != nil && opts.ConfigPath != "" {
+		configPath = opts.ConfigPath
+	}
+
+	err = generateConfig(req, configPath)
+	if err != nil {
+		return nil, errors.Wrap(err, "generate config")
+	}
+
+	addr := (&url.URL{Scheme: "unix", Path: sockPath}).String()
 
 	buildkitdFlags := []string{
-		"--root", buildkitd.rootDir,
-		"--addr", buildkitd.Addr,
+		"--root", rootDir,
+		"--addr", addr,
+		"--config", configPath,
 	}
 
 	var cmd *exec.Cmd
@@ -98,7 +97,7 @@ func SpawnBuildkitd(req Request, opts *BuildkitdOpts) (*Buildkitd, error) {
 	}
 
 	for {
-		err := buildctl(buildkitd.Addr, ioutil.Discard, "debug", "workers")
+		err := buildctl(addr, ioutil.Discard, "debug", "workers")
 		if err == nil {
 			break
 		}
@@ -120,8 +119,12 @@ func SpawnBuildkitd(req Request, opts *BuildkitdOpts) (*Buildkitd, error) {
 
 	logrus.Debug("buildkitd started")
 
-	buildkitd.proc = cmd.Process
-	return &buildkitd, nil
+	return &Buildkitd{
+		Addr: addr,
+
+		rootDir: rootDir,
+		proc:    cmd.Process,
+	}, nil
 }
 
 func (buildkitd *Buildkitd) Cleanup() error {
@@ -138,9 +141,8 @@ func (buildkitd *Buildkitd) Cleanup() error {
 	return nil
 }
 
-func (buildkitd *Buildkitd) setConfigFromRequest(req Request) {
+func generateConfig(req Request, configPath string) error {
 	var config BuildkitdConfig
-	var configSet bool
 
 	if len(req.Config.RegistryMirrors) > 0 {
 		var registryConfigs map[string]RegistryConfig
@@ -150,43 +152,24 @@ func (buildkitd *Buildkitd) setConfigFromRequest(req Request) {
 		}
 
 		config.Registries = registryConfigs
-		configSet = true
 	}
 
-	if configSet {
-		buildkitd.config = &config
-	}
-}
-
-func (buildkitd Buildkitd) generateConfig() error {
-	if buildkitd.config == nil {
-		return nil
-	}
-
-	configPath := "/etc/buildkit/buildkitd.toml"
-	if buildkitd.opts != nil && buildkitd.opts.ConfigPath != "" {
-		configPath = buildkitd.opts.ConfigPath
-	}
-
-	configDirPath := filepath.Dir(configPath)
-	if _, err := os.Stat(configDirPath); err != nil {
-		err := os.Mkdir(configDirPath, 0755)
-		if err != nil {
-			return err
-		}
-	}
-
-	f, err := os.OpenFile(configPath, os.O_RDWR|os.O_CREATE, 0644)
+	err := os.MkdirAll(filepath.Dir(configPath), 0700)
 	if err != nil {
 		return err
 	}
 
-	err = toml.NewEncoder(f).Encode(buildkitd.config)
+	f, err := os.Create(configPath)
 	if err != nil {
 		return err
 	}
 
-	return nil
+	err = toml.NewEncoder(f).Encode(config)
+	if err != nil {
+		return err
+	}
+
+	return f.Close()
 }
 
 func dumpLogFile(logPath string) {
