@@ -2,11 +2,18 @@ package task_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
+	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
 	"testing"
 
+	"github.com/google/go-containerregistry/pkg/name"
+	"github.com/google/go-containerregistry/pkg/registry"
+	"github.com/google/go-containerregistry/pkg/v1/random"
+	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -24,7 +31,7 @@ type TaskSuite struct {
 
 func (s *TaskSuite) SetupSuite() {
 	var err error
-	s.buildkitd, err = task.SpawnBuildkitd(s.req, nil)
+	s.buildkitd, err = task.SpawnBuildkitd(task.Request{}, nil)
 	s.NoError(err)
 }
 
@@ -162,6 +169,61 @@ func (s *TaskSuite) TestUnpackRootfs() {
 
 	s.Equal(meta.User, "banana")
 	s.Equal(meta.Env, []string{"PATH=/darkness", "BA=nana"})
+}
+
+func (s *TaskSuite) TestRegistryMirrors() {
+	mirror := httptest.NewServer(registry.New())
+	defer mirror.Close()
+
+	image, err := random.Image(1024, 2)
+	s.NoError(err)
+
+	mirrorURL, err := url.Parse(mirror.URL)
+	s.NoError(err)
+
+	mirrorRef, err := name.NewTag(fmt.Sprintf("%s/library/mirrored-image:some-tag", mirrorURL.Host))
+	s.NoError(err)
+
+	err = remote.Write(mirrorRef, image)
+	s.NoError(err)
+
+	s.req.Config.ContextDir = "testdata/mirror"
+	s.req.Config.RegistryMirrors = []string{mirrorURL.Host}
+
+	rootDir, err := ioutil.TempDir("", "mirrored-buildkitd")
+	s.NoError(err)
+
+	defer os.RemoveAll(rootDir)
+
+	mirroredBuildkitd, err := task.SpawnBuildkitd(s.req, &task.BuildkitdOpts{
+		RootDir: rootDir,
+	})
+	s.NoError(err)
+
+	defer mirroredBuildkitd.Cleanup()
+
+	_, err = task.Build(mirroredBuildkitd, s.outputsDir, s.req)
+	s.NoError(err)
+
+	builtImage, err := tarball.ImageFromPath(s.imagePath("image.tar"), nil)
+	s.NoError(err)
+
+	layers, err := image.Layers()
+	s.NoError(err)
+
+	builtLayers, err := builtImage.Layers()
+	s.NoError(err)
+	s.Len(layers, len(layers))
+
+	for i := 0; i < len(layers); i++ {
+		digest, err := layers[i].Digest()
+		s.NoError(err)
+
+		builtDigest, err := builtLayers[i].Digest()
+		s.NoError(err)
+
+		s.Equal(digest, builtDigest)
+	}
 }
 
 func (s *TaskSuite) build() (task.Response, error) {
