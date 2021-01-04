@@ -145,19 +145,9 @@ func writeImageMetadata(metadataPath string, image v1.Image) error {
 		return errors.Wrap(err, "create metadata file")
 	}
 
-	env := cfg.Config.Env
-	if len(env) == 0 {
-		env = cfg.ContainerConfig.Env
-	}
-
-	user := cfg.Config.User
-	if user == "" {
-		user = cfg.ContainerConfig.User
-	}
-
 	err = json.NewEncoder(meta).Encode(ImageMetadata{
-		Env:  env,
-		User: user,
+		Env:  cfg.Config.Env,
+		User: cfg.Config.User,
 	})
 	if err != nil {
 		return errors.Wrap(err, "encode metadata")
