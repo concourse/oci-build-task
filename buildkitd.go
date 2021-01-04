@@ -66,6 +66,10 @@ func SpawnBuildkitd(req Request, opts *BuildkitdOpts) (*Buildkitd, error) {
 		"--config", configPath,
 	}
 
+	if req.Config.Debug {
+		buildkitdFlags = append(buildkitdFlags, "--debug")
+	}
+
 	var cmd *exec.Cmd
 	if os.Getuid() == 0 {
 		cmd = exec.Command("buildkitd", buildkitdFlags...)
