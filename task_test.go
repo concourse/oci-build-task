@@ -153,7 +153,7 @@ func (s *TaskSuite) TestBuildArgsStaticAndFile() {
 func (s *TaskSuite) TestLabels() {
 	s.req.Config.ContextDir = "testdata/labels"
 	expectedLabels := map[string]string{
-		"some_label": "some_value",
+		"some_label":       "some_value",
 		"some_other_label": "some_other_value",
 	}
 	s.req.Config.Labels = make([]string, 0, len(expectedLabels))
@@ -177,7 +177,7 @@ func (s *TaskSuite) TestLabels() {
 func (s *TaskSuite) TestLabelsFile() {
 	s.req.Config.ContextDir = "testdata/labels"
 	expectedLabels := map[string]string{
-		"some_label": "some_value",
+		"some_label":       "some_value",
 		"some_other_label": "some_other_value",
 	}
 	s.req.Config.LabelsFile = "testdata/labels/labels_file"
@@ -198,9 +198,9 @@ func (s *TaskSuite) TestLabelsStaticAndFileAndLayer() {
 	s.req.Config.ContextDir = "testdata/labels"
 	s.req.Config.DockerfilePath = "testdata/labels/label_layer.dockerfile"
 	expectedLabels := map[string]string{
-		"some_label": "some_value",
+		"some_label":       "some_value",
 		"some_other_label": "some_other_value",
-		"label_layer": "some_label_layer_value",
+		"label_layer":      "some_label_layer_value",
 	}
 	s.req.Config.Labels = []string{"some_label=some_value"}
 	s.req.Config.LabelsFile = "testdata/labels/label_file"
@@ -224,7 +224,7 @@ func (s *TaskSuite) TestUnpackRootfs() {
 	_, err := s.build()
 	s.NoError(err)
 
-	meta, err := s.imageMetadata()
+	meta, err := s.imageMetadata("image")
 	s.NoError(err)
 
 	rootfsContent, err := ioutil.ReadFile(s.imagePath("rootfs", "Dockerfile"))
@@ -317,14 +317,67 @@ func (s *TaskSuite) TestMultiTarget() {
 	additionalCfg, err := additionalImage.ConfigFile()
 	s.NoError(err)
 	s.Equal("additional-target", additionalCfg.Config.Labels["target"])
+}
 
+func (s *TaskSuite) TestMultiTargetDigest() {
+	s.req.Config.ContextDir = "testdata/multi-target"
+	s.req.Config.AdditionalTargets = []string{"additional-target"}
+
+	err := os.Mkdir(s.outputPath("additional-target"), 0755)
+	s.NoError(err)
+
+	_, err = s.build()
+	s.NoError(err)
+
+	additionalImage, err := tarball.ImageFromPath(s.outputPath("additional-target", "image.tar"), nil)
+	s.NoError(err)
 	digest, err := ioutil.ReadFile(s.outputPath("additional-target", "digest"))
 	s.NoError(err)
-
 	additionalManifest, err := additionalImage.Manifest()
 	s.NoError(err)
-
 	s.Equal(string(digest), additionalManifest.Config.Digest.String())
+
+	finalImage, err := tarball.ImageFromPath(s.imagePath("image.tar"), nil)
+	s.NoError(err)
+	digest, err = ioutil.ReadFile(s.outputPath("image", "digest"))
+	s.NoError(err)
+	finalManifest, err := finalImage.Manifest()
+	s.NoError(err)
+	s.Equal(string(digest), finalManifest.Config.Digest.String())
+}
+
+func (s *TaskSuite) TestMultiTargetUnpack() {
+	s.req.Config.ContextDir = "testdata/multi-target"
+	s.req.Config.AdditionalTargets = []string{"additional-target"}
+	s.req.Config.UnpackRootfs = true
+
+	err := os.Mkdir(s.outputPath("additional-target"), 0755)
+	s.NoError(err)
+
+	_, err = s.build()
+	s.NoError(err)
+
+	rootfsContent, err := ioutil.ReadFile(s.outputPath("additional-target", "rootfs", "Dockerfile.banana"))
+	s.NoError(err)
+	expectedContent, err := ioutil.ReadFile("testdata/multi-target/Dockerfile")
+	s.NoError(err)
+	s.Equal(rootfsContent, expectedContent)
+
+	meta, err := s.imageMetadata("additional-target")
+	s.NoError(err)
+	s.Equal(meta.User, "banana")
+	s.Equal(meta.Env, []string{"PATH=/darkness", "BA=nana"})
+
+	rootfsContent, err = ioutil.ReadFile(s.outputPath("image", "rootfs", "Dockerfile.orange"))
+	s.NoError(err)
+	expectedContent, err = ioutil.ReadFile("testdata/multi-target/Dockerfile")
+	s.NoError(err)
+	s.Equal(rootfsContent, expectedContent)
+
+	meta, err = s.imageMetadata("image")
+	s.NoError(err)
+	s.Equal(meta.User, "orange")
+	s.Equal(meta.Env, []string{"PATH=/lightness", "OR=ange"})
 }
 
 func (s *TaskSuite) build() (task.Response, error) {
@@ -339,8 +392,8 @@ func (s *TaskSuite) outputPath(path ...string) string {
 	return filepath.Join(append([]string{s.outputsDir}, path...)...)
 }
 
-func (s *TaskSuite) imageMetadata() (task.ImageMetadata, error) {
-	metadataPayload, err := ioutil.ReadFile(s.imagePath("metadata.json"))
+func (s *TaskSuite) imageMetadata(output string) (task.ImageMetadata, error) {
+	metadataPayload, err := ioutil.ReadFile(s.outputPath(output, "metadata.json"))
 	if err != nil {
 		return task.ImageMetadata{}, err
 	}

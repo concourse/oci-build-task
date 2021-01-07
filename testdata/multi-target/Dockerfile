@@ -1,8 +1,13 @@
-FROM busybox
-RUN false
-
-FROM busybox AS additional-target
+FROM scratch AS additional-target
 LABEL target=additional-target
+USER banana
+ADD Dockerfile /Dockerfile.banana
+ENV PATH=/darkness
+ENV BA=nana
 
-FROM busybox
+FROM scratch
 LABEL target=final-target
+USER orange
+ADD Dockerfile /Dockerfile.orange
+ENV PATH=/lightness
+ENV OR=ange

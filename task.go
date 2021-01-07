@@ -26,7 +26,6 @@ func Build(buildkitd *Buildkitd, outputsDir string, req Request) (Response, erro
 		return Response{}, errors.Wrap(err, "config")
 	}
 
-	imageDir := filepath.Join(outputsDir, "image")
 	cacheDir := filepath.Join(outputsDir, "cache")
 
 	res := Response{
@@ -67,9 +66,7 @@ func Build(buildkitd *Buildkitd, outputsDir string, req Request) (Response, erro
 	var imagePaths []string
 
 	for _, t := range cfg.AdditionalTargets {
-		targetArgs := make([]string, len(buildctlArgs))
-		copy(targetArgs, buildctlArgs)
-		targetArgs = append(targetArgs, "--opt", "target="+t)
+		targetArgs := append(buildctlArgs, "--opt", "target="+t)
 
 		targetDir := filepath.Join(outputsDir, t)
 
@@ -85,8 +82,9 @@ func Build(buildkitd *Buildkitd, outputsDir string, req Request) (Response, erro
 		builds = append(builds, targetArgs)
 	}
 
-	if _, err := os.Stat(imageDir); err == nil {
-		imagePath := filepath.Join(imageDir, "image.tar")
+	finalTargetDir := filepath.Join(outputsDir, "image")
+	if _, err := os.Stat(finalTargetDir); err == nil {
+		imagePath := filepath.Join(finalTargetDir, "image.tar")
 		imagePaths = append(imagePaths, imagePath)
 
 		buildctlArgs = append(buildctlArgs,
@@ -120,25 +118,20 @@ func Build(buildkitd *Buildkitd, outputsDir string, req Request) (Response, erro
 	}
 
 	for _, imagePath := range imagePaths {
-		digestPath := filepath.Join(filepath.Dir(imagePath), "digest")
-
 		image, err := tarball.ImageFromPath(imagePath, nil)
 		if err != nil {
 			return Response{}, errors.Wrap(err, "open oci image")
 		}
 
-		manifest, err := image.Manifest()
-		if err != nil {
-			return Response{}, errors.Wrap(err, "get image digest")
-		}
+		outputDir := filepath.Dir(imagePath)
 
-		err = ioutil.WriteFile(digestPath, []byte(manifest.Config.Digest.String()), 0644)
+		err = writeDigest(outputDir, image)
 		if err != nil {
-			return Response{}, errors.Wrap(err, "write digest")
+			return Response{}, err
 		}
 
 		if req.Config.UnpackRootfs {
-			err = unpackRootfs(imageDir, image, cfg)
+			err = unpackRootfs(outputDir, image, cfg)
 			if err != nil {
 				return Response{}, errors.Wrap(err, "unpack rootfs")
 			}
@@ -146,6 +139,22 @@ func Build(buildkitd *Buildkitd, outputsDir string, req Request) (Response, erro
 	}
 
 	return res, nil
+}
+
+func writeDigest(dest string, image v1.Image) error {
+	digestPath := filepath.Join(dest, "digest")
+
+	manifest, err := image.Manifest()
+	if err != nil {
+		return errors.Wrap(err, "get image digest")
+	}
+
+	err = ioutil.WriteFile(digestPath, []byte(manifest.Config.Digest.String()), 0644)
+	if err != nil {
+		return errors.Wrap(err, "write digest file")
+	}
+
+	return nil
 }
 
 func unpackRootfs(dest string, image v1.Image, cfg Config) error {
