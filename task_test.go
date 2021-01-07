@@ -104,7 +104,7 @@ func (s *TaskSuite) TestDockerfilePath() {
 }
 
 func (s *TaskSuite) TestTarget() {
-	s.req.Config.ContextDir = "testdata/multi-target"
+	s.req.Config.ContextDir = "testdata/target"
 	s.req.Config.Target = "working-target"
 
 	_, err := s.build()
@@ -112,8 +112,8 @@ func (s *TaskSuite) TestTarget() {
 }
 
 func (s *TaskSuite) TestTargetFile() {
-	s.req.Config.ContextDir = "testdata/multi-target"
-	s.req.Config.TargetFile = "testdata/multi-target/target_file"
+	s.req.Config.ContextDir = "testdata/target"
+	s.req.Config.TargetFile = "testdata/target/target_file"
 
 	_, err := s.build()
 	s.NoError(err)
@@ -294,12 +294,49 @@ func (s *TaskSuite) TestRegistryMirrors() {
 	}
 }
 
+func (s *TaskSuite) TestMultiTarget() {
+	s.req.Config.ContextDir = "testdata/multi-target"
+	s.req.Config.AdditionalTargets = []string{"additional-target"}
+
+	err := os.Mkdir(s.outputPath("additional-target"), 0755)
+	s.NoError(err)
+
+	_, err = s.build()
+	s.NoError(err)
+
+	finalImage, err := tarball.ImageFromPath(s.imagePath("image.tar"), nil)
+	s.NoError(err)
+
+	finalCfg, err := finalImage.ConfigFile()
+	s.NoError(err)
+	s.Equal("final-target", finalCfg.Config.Labels["target"])
+
+	additionalImage, err := tarball.ImageFromPath(s.outputPath("additional-target", "image.tar"), nil)
+	s.NoError(err)
+
+	additionalCfg, err := additionalImage.ConfigFile()
+	s.NoError(err)
+	s.Equal("additional-target", additionalCfg.Config.Labels["target"])
+
+	digest, err := ioutil.ReadFile(s.outputPath("additional-target", "digest"))
+	s.NoError(err)
+
+	additionalManifest, err := additionalImage.Manifest()
+	s.NoError(err)
+
+	s.Equal(string(digest), additionalManifest.Config.Digest.String())
+}
+
 func (s *TaskSuite) build() (task.Response, error) {
 	return task.Build(s.buildkitd, s.outputsDir, s.req)
 }
 
 func (s *TaskSuite) imagePath(path ...string) string {
-	return filepath.Join(append([]string{s.outputsDir, "image"}, path...)...)
+	return s.outputPath(append([]string{"image"}, path...)...)
+}
+
+func (s *TaskSuite) outputPath(path ...string) string {
+	return filepath.Join(append([]string{s.outputsDir}, path...)...)
 }
 
 func (s *TaskSuite) imageMetadata() (task.ImageMetadata, error) {

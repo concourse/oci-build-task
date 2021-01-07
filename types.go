@@ -49,8 +49,9 @@ type Config struct {
 	ContextDir     string `json:"context"              envconfig:"CONTEXT,optional"`
 	DockerfilePath string `json:"dockerfile,omitempty" envconfig:"DOCKERFILE,optional"`
 
-	Target     string `json:"target"      envconfig:"optional"`
-	TargetFile string `json:"target_file" envconfig:"optional"`
+	Target            string   `json:"target"      envconfig:"optional"`
+	TargetFile        string   `json:"target_file" envconfig:"optional"`
+	AdditionalTargets []string `json:"additional_targets" envconfig:"ADDITIONAL_TARGETS,optional"`
 
 	BuildArgs     []string `json:"build_args"      envconfig:"optional"`
 	BuildArgsFile string   `json:"build_args_file" envconfig:"optional"`

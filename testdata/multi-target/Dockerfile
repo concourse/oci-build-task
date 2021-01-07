@@ -1,8 +1,8 @@
 FROM busybox
 RUN false
 
-FROM busybox AS working-target
-RUN true
+FROM busybox AS additional-target
+LABEL target=additional-target
 
-FROM busybox AS broken-target
-RUN false
+FROM busybox
+LABEL target=final-target

@@ -45,31 +45,9 @@ func Build(buildkitd *Buildkitd, outputsDir string, req Request) (Response, erro
 		"--opt", "filename=" + dockerfileName,
 	}
 
-	var imagePath, digestPath string
-	if _, err := os.Stat(imageDir); err == nil {
-		imagePath = filepath.Join(imageDir, "image.tar")
-		digestPath = filepath.Join(imageDir, "digest")
-
+	for _, arg := range cfg.Labels {
 		buildctlArgs = append(buildctlArgs,
-			"--output", "type=docker,dest="+imagePath,
-		)
-	}
-
-	if _, err := os.Stat(cacheDir); err == nil {
-		buildctlArgs = append(buildctlArgs,
-			"--export-cache", "type=local,mode=min,dest="+cacheDir,
-		)
-	}
-
-	if _, err := os.Stat(filepath.Join(cacheDir, "index.json")); err == nil {
-		buildctlArgs = append(buildctlArgs,
-			"--import-cache", "type=local,src="+cacheDir,
-		)
-	}
-
-	if cfg.Target != "" {
-		buildctlArgs = append(buildctlArgs,
-			"--opt", "target="+cfg.Target,
+			"--opt", "label:"+arg,
 		)
 	}
 
@@ -79,22 +57,71 @@ func Build(buildkitd *Buildkitd, outputsDir string, req Request) (Response, erro
 		)
 	}
 
-	for _, arg := range cfg.Labels {
+	if _, err := os.Stat(cacheDir); err == nil {
 		buildctlArgs = append(buildctlArgs,
-			"--opt", "label:"+arg,
+			"--export-cache", "type=local,mode=min,dest="+cacheDir,
 		)
 	}
 
-	logrus.WithFields(logrus.Fields{
-		"buildctl-args": buildctlArgs,
-	}).Debug("building")
+	var builds [][]string
+	var imagePaths []string
 
-	err = buildctl(buildkitd.Addr, os.Stdout, buildctlArgs...)
-	if err != nil {
-		return Response{}, errors.Wrap(err, "build")
+	for _, t := range cfg.AdditionalTargets {
+		targetArgs := make([]string, len(buildctlArgs))
+		copy(targetArgs, buildctlArgs)
+		targetArgs = append(targetArgs, "--opt", "target="+t)
+
+		targetDir := filepath.Join(outputsDir, t)
+
+		if _, err := os.Stat(targetDir); err == nil {
+			imagePath := filepath.Join(targetDir, "image.tar")
+			imagePaths = append(imagePaths, imagePath)
+
+			targetArgs = append(targetArgs,
+				"--output", "type=docker,dest="+imagePath,
+			)
+		}
+
+		builds = append(builds, targetArgs)
 	}
 
-	if imagePath != "" {
+	if _, err := os.Stat(imageDir); err == nil {
+		imagePath := filepath.Join(imageDir, "image.tar")
+		imagePaths = append(imagePaths, imagePath)
+
+		buildctlArgs = append(buildctlArgs,
+			"--output", "type=docker,dest="+imagePath,
+		)
+	}
+
+	if cfg.Target != "" {
+		buildctlArgs = append(buildctlArgs,
+			"--opt", "target="+cfg.Target,
+		)
+	}
+
+	builds = append(builds, buildctlArgs)
+
+	for _, args := range builds {
+		logrus.WithFields(logrus.Fields{
+			"buildctl-args": args,
+		}).Debug("building")
+
+		if _, err := os.Stat(filepath.Join(cacheDir, "index.json")); err == nil {
+			args = append(args,
+				"--import-cache", "type=local,src="+cacheDir,
+			)
+		}
+
+		err = buildctl(buildkitd.Addr, os.Stdout, args...)
+		if err != nil {
+			return Response{}, errors.Wrap(err, "build")
+		}
+	}
+
+	for _, imagePath := range imagePaths {
+		digestPath := filepath.Join(filepath.Dir(imagePath), "digest")
+
 		image, err := tarball.ImageFromPath(imagePath, nil)
 		if err != nil {
 			return Response{}, errors.Wrap(err, "open oci image")
