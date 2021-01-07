@@ -2,6 +2,7 @@ package task
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -63,6 +64,7 @@ func Build(buildkitd *Buildkitd, outputsDir string, req Request) (Response, erro
 	}
 
 	var builds [][]string
+	var targets []string
 	var imagePaths []string
 
 	for _, t := range cfg.AdditionalTargets {
@@ -85,6 +87,7 @@ func Build(buildkitd *Buildkitd, outputsDir string, req Request) (Response, erro
 		}
 
 		builds = append(builds, targetArgs)
+		targets = append(targets, t)
 	}
 
 	finalTargetDir := filepath.Join(outputsDir, "image")
@@ -104,17 +107,27 @@ func Build(buildkitd *Buildkitd, outputsDir string, req Request) (Response, erro
 	}
 
 	builds = append(builds, buildctlArgs)
+	targets = append(targets, "")
 
-	for _, args := range builds {
-		logrus.WithFields(logrus.Fields{
-			"buildctl-args": args,
-		}).Debug("building")
+	for i, args := range builds {
+		if i > 0 {
+			fmt.Fprintln(os.Stderr)
+		}
+
+		targetName := targets[i]
+		if targetName == "" {
+			logrus.Info("building image")
+		} else {
+			logrus.Infof("building target '%s'", targetName)
+		}
 
 		if _, err := os.Stat(filepath.Join(cacheDir, "index.json")); err == nil {
 			args = append(args,
 				"--import-cache", "type=local,src="+cacheDir,
 			)
 		}
+
+		logrus.Debugf("running buildctl %s", strings.Join(args, " "))
 
 		err = buildctl(buildkitd.Addr, os.Stdout, args...)
 		if err != nil {
