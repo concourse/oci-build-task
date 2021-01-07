@@ -57,6 +57,9 @@ type Config struct {
 
 	RegistryMirrors []string `json:"registry_mirrors" envconfig:"REGISTRY_MIRRORS,optional"`
 
+	Labels     []string `json:"labels"      envconfig:"optional"`
+	LabelsFile string   `json:"labels_file" envconfig:"optional"`
+
 	// Unpack the OCI image into Concourse's rootfs/ + metadata.json image scheme.
 	//
 	// Theoretically this would go away if/when we standardize on OCI.

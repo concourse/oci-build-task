@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 
 	"github.com/google/go-containerregistry/pkg/name"
@@ -147,6 +148,73 @@ func (s *TaskSuite) TestBuildArgsStaticAndFile() {
 	// the Dockerfile itself asserts that the arg has been received
 	_, err := s.build()
 	s.NoError(err)
+}
+
+func (s *TaskSuite) TestLabels() {
+	s.req.Config.ContextDir = "testdata/labels"
+	expectedLabels := map[string]string{
+		"some_label": "some_value",
+		"some_other_label": "some_other_value",
+	}
+	s.req.Config.Labels = make([]string, 0, len(expectedLabels))
+
+	for k, v := range expectedLabels {
+		s.req.Config.Labels = append(s.req.Config.Labels, fmt.Sprintf("%s=%s", k, v))
+	}
+
+	_, err := s.build()
+	s.NoError(err)
+
+	image, err := tarball.ImageFromPath(s.imagePath("image.tar"), nil)
+	s.NoError(err)
+
+	configFile, err := image.ConfigFile()
+	s.NoError(err)
+
+	s.True(reflect.DeepEqual(expectedLabels, configFile.Config.Labels))
+}
+
+func (s *TaskSuite) TestLabelsFile() {
+	s.req.Config.ContextDir = "testdata/labels"
+	expectedLabels := map[string]string{
+		"some_label": "some_value",
+		"some_other_label": "some_other_value",
+	}
+	s.req.Config.LabelsFile = "testdata/labels/labels_file"
+
+	_, err := s.build()
+	s.NoError(err)
+
+	image, err := tarball.ImageFromPath(s.imagePath("image.tar"), nil)
+	s.NoError(err)
+
+	configFile, err := image.ConfigFile()
+	s.NoError(err)
+
+	s.True(reflect.DeepEqual(expectedLabels, configFile.Config.Labels))
+}
+
+func (s *TaskSuite) TestLabelsStaticAndFileAndLayer() {
+	s.req.Config.ContextDir = "testdata/labels"
+	s.req.Config.DockerfilePath = "testdata/labels/label_layer.dockerfile"
+	expectedLabels := map[string]string{
+		"some_label": "some_value",
+		"some_other_label": "some_other_value",
+		"label_layer": "some_label_layer_value",
+	}
+	s.req.Config.Labels = []string{"some_label=some_value"}
+	s.req.Config.LabelsFile = "testdata/labels/label_file"
+
+	_, err := s.build()
+	s.NoError(err)
+
+	image, err := tarball.ImageFromPath(s.imagePath("image.tar"), nil)
+	s.NoError(err)
+
+	configFile, err := image.ConfigFile()
+	s.NoError(err)
+
+	s.True(reflect.DeepEqual(expectedLabels, configFile.Config.Labels))
 }
 
 func (s *TaskSuite) TestUnpackRootfs() {

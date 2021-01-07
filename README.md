@@ -69,6 +69,12 @@ Next, any of the following optional parameters may be specified:
   DO_THING=false
   ```
 
+* `$LABEL_*`: params prefixed with `LABEL_` will be set as image labels.
+  For example `LABEL_foo=bar`, will set the `foo` label to `bar`.
+
+* `$LABELS_FILE` (default empty): path to a file containing labels in
+  the form `foo=bar`, one per line. Empty lines are skipped.
+
 * `$TARGET` (default empty): a target build stage to build.
 
 * `$TARGET_FILE` (default empty): path to a file containing the name of the
