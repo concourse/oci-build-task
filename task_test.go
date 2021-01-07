@@ -319,6 +319,32 @@ func (s *TaskSuite) TestMultiTarget() {
 	s.Equal("additional-target", additionalCfg.Config.Labels["target"])
 }
 
+func (s *TaskSuite) TestMultiTargetExplicitTarget() {
+	s.req.Config.ContextDir = "testdata/multi-target"
+	s.req.Config.AdditionalTargets = []string{"additional-target"}
+	s.req.Config.Target = "final-target"
+
+	err := os.Mkdir(s.outputPath("additional-target"), 0755)
+	s.NoError(err)
+
+	_, err = s.build()
+	s.NoError(err)
+
+	finalImage, err := tarball.ImageFromPath(s.imagePath("image.tar"), nil)
+	s.NoError(err)
+
+	finalCfg, err := finalImage.ConfigFile()
+	s.NoError(err)
+	s.Equal("final-target", finalCfg.Config.Labels["target"])
+
+	additionalImage, err := tarball.ImageFromPath(s.outputPath("additional-target", "image.tar"), nil)
+	s.NoError(err)
+
+	additionalCfg, err := additionalImage.ConfigFile()
+	s.NoError(err)
+	s.Equal("additional-target", additionalCfg.Config.Labels["target"])
+}
+
 func (s *TaskSuite) TestMultiTargetDigest() {
 	s.req.Config.ContextDir = "testdata/multi-target"
 	s.req.Config.AdditionalTargets = []string{"additional-target"}

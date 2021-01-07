@@ -66,7 +66,12 @@ func Build(buildkitd *Buildkitd, outputsDir string, req Request) (Response, erro
 	var imagePaths []string
 
 	for _, t := range cfg.AdditionalTargets {
-		targetArgs := append(buildctlArgs, "--opt", "target="+t)
+		// prevent re-use of the buildctlArgs slice as it is appended to later on,
+		// and that would clobber args for all targets if the slice was re-used
+		targetArgs := make([]string, len(buildctlArgs))
+		copy(targetArgs, buildctlArgs)
+
+		targetArgs = append(targetArgs, "--opt", "target="+t)
 
 		targetDir := filepath.Join(outputsDir, t)
 

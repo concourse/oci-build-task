@@ -5,7 +5,7 @@ ADD Dockerfile /Dockerfile.banana
 ENV PATH=/darkness
 ENV BA=nana
 
-FROM scratch
+FROM scratch AS final-target
 LABEL target=final-target
 USER orange
 ADD Dockerfile /Dockerfile.orange
