@@ -13,6 +13,7 @@ import (
 
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/registry"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/random"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
@@ -281,7 +282,7 @@ func (s *TaskSuite) TestRegistryMirrors() {
 
 	builtLayers, err := builtImage.Layers()
 	s.NoError(err)
-	s.Len(layers, len(layers))
+	s.Len(builtLayers, len(layers))
 
 	for i := 0; i < len(layers); i++ {
 		digest, err := layers[i].Digest()
@@ -291,6 +292,66 @@ func (s *TaskSuite) TestRegistryMirrors() {
 		s.NoError(err)
 
 		s.Equal(digest, builtDigest)
+	}
+}
+
+func (s *TaskSuite) TestImageArgs() {
+	imagesDir, err := ioutil.TempDir("", "preload-images")
+	s.NoError(err)
+
+	defer os.RemoveAll(imagesDir)
+
+	firstImage, err := random.Image(1024, 2)
+	s.NoError(err)
+	firstPath := filepath.Join(imagesDir, "first.tar")
+	err = tarball.WriteToFile(firstPath, nil, firstImage)
+	s.NoError(err)
+
+	secondImage, err := random.Image(1024, 2)
+	s.NoError(err)
+	secondPath := filepath.Join(imagesDir, "second.tar")
+	err = tarball.WriteToFile(secondPath, nil, secondImage)
+	s.NoError(err)
+
+	s.req.Config.ContextDir = "testdata/image-args"
+	s.req.Config.AdditionalTargets = []string{"first"}
+	s.req.Config.ImageArgs = []string{
+		"first_image=" + firstPath,
+		"second_image=" + secondPath,
+	}
+
+	err = os.Mkdir(s.outputPath("first"), 0755)
+	s.NoError(err)
+
+	_, err = s.build()
+	s.NoError(err)
+
+	firstBuiltImage, err := tarball.ImageFromPath(s.outputPath("first", "image.tar"), nil)
+	s.NoError(err)
+
+	secondBuiltImage, err := tarball.ImageFromPath(s.outputPath("image", "image.tar"), nil)
+	s.NoError(err)
+
+	for image, builtImage := range map[v1.Image]v1.Image{
+		firstImage:  firstBuiltImage,
+		secondImage: secondBuiltImage,
+	} {
+		layers, err := image.Layers()
+		s.NoError(err)
+
+		builtLayers, err := builtImage.Layers()
+		s.NoError(err)
+		s.Len(builtLayers, len(layers)+1)
+
+		for i := 0; i < len(layers); i++ {
+			digest, err := layers[i].Digest()
+			s.NoError(err)
+
+			builtDigest, err := builtLayers[i].Digest()
+			s.NoError(err)
+
+			s.Equal(digest, builtDigest)
+		}
 	}
 }
 

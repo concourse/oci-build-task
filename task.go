@@ -57,6 +57,30 @@ func Build(buildkitd *Buildkitd, outputsDir string, req Request) (Response, erro
 		)
 	}
 
+	if len(req.Config.ImageArgs) > 0 {
+		imagePaths := map[string]string{}
+		for _, arg := range req.Config.ImageArgs {
+			segs := strings.SplitN(arg, "=", 2)
+			imagePaths[segs[0]] = segs[1]
+		}
+
+		registry, err := LoadRegistry(imagePaths)
+		if err != nil {
+			return Response{}, fmt.Errorf("create local image registry: %w", err)
+		}
+
+		port, err := ServeRegistry(registry)
+		if err != nil {
+			return Response{}, fmt.Errorf("create local image registry: %w", err)
+		}
+
+		for _, arg := range registry.BuildArgs(port) {
+			buildctlArgs = append(buildctlArgs,
+				"--opt", "build-arg:"+arg,
+			)
+		}
+	}
+
 	if _, err := os.Stat(cacheDir); err == nil {
 		buildctlArgs = append(buildctlArgs,
 			"--export-cache", "type=local,mode=min,dest="+cacheDir,

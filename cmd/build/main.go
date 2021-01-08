@@ -13,6 +13,7 @@ import (
 )
 
 const buildArgPrefix = "BUILD_ARG_"
+const imageArgPrefix = "IMAGE_ARG_"
 const labelPrefix = "LABEL_"
 
 func main() {
@@ -31,6 +32,14 @@ func main() {
 				strings.TrimPrefix(env, buildArgPrefix),
 			)
 		}
+
+		if strings.HasPrefix(env, imageArgPrefix) {
+			req.Config.ImageArgs = append(
+				req.Config.ImageArgs,
+				strings.TrimPrefix(env, imageArgPrefix),
+			)
+		}
+
 		if strings.HasPrefix(env, labelPrefix) {
 			req.Config.Labels = append(
 				req.Config.Labels,

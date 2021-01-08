@@ -65,6 +65,13 @@ type Config struct {
 	//
 	// Theoretically this would go away if/when we standardize on OCI.
 	UnpackRootfs bool `json:"unpack_rootfs" envconfig:"optional"`
+
+	// Images to pre-load in order to avoid fetching at build time. Mapping from
+	// build arg name to OCI image tarball path.
+	//
+	// Each image will be pre-loaded and a build arg will be set to a value
+	// appropriate for setting in 'FROM ...'.
+	ImageArgs []string `json:"image_args" envconfig:"optional"`
 }
 
 // ImageMetadata is the schema written to manifest.json when producing the
