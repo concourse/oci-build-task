@@ -52,7 +52,9 @@ func (s *TaskSuite) SetupTest() {
 
 	s.req = task.Request{
 		ResponsePath: filepath.Join(s.outputsDir, "response.json"),
-		Config:       task.Config{},
+		Config: task.Config{
+			Debug: true,
+		},
 	}
 }
 
@@ -353,6 +355,44 @@ func (s *TaskSuite) TestImageArgs() {
 			s.Equal(digest, builtDigest)
 		}
 	}
+}
+
+func (s *TaskSuite) TestImageArgsUnpack() {
+	imagesDir, err := ioutil.TempDir("", "preload-images")
+	s.NoError(err)
+
+	defer os.RemoveAll(imagesDir)
+
+	image, err := random.Image(1024, 2)
+	s.NoError(err)
+	imagePath := filepath.Join(imagesDir, "first.tar")
+	err = tarball.WriteToFile(imagePath, nil, image)
+	s.NoError(err)
+
+	s.req.Config.ContextDir = "testdata/image-args"
+	s.req.Config.AdditionalTargets = []string{"first"}
+	s.req.Config.ImageArgs = []string{
+		"first_image=" + imagePath,
+		"second_image=" + imagePath,
+	}
+	s.req.Config.UnpackRootfs = true
+
+	_, err = s.build()
+	s.NoError(err)
+
+	meta, err := s.imageMetadata("image")
+	s.NoError(err)
+
+	rootfsContent, err := ioutil.ReadFile(s.imagePath("rootfs", "Dockerfile.second"))
+	s.NoError(err)
+
+	expectedContent, err := ioutil.ReadFile("testdata/image-args/Dockerfile")
+	s.NoError(err)
+
+	s.Equal(rootfsContent, expectedContent)
+
+	s.Equal(meta.User, "banana")
+	s.Equal(meta.Env, []string{"PATH=/darkness", "BA=nana"})
 }
 
 func (s *TaskSuite) TestMultiTarget() {

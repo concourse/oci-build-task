@@ -1,35 +1,28 @@
 package task
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"net"
 	"net/http"
 
-	"github.com/containers/image/v5/docker/archive"
-	"github.com/containers/image/v5/types"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/google/go-containerregistry/pkg/v1/tarball"
 	"github.com/julienschmidt/httprouter"
-	"github.com/opencontainers/go-digest"
 	"github.com/sirupsen/logrus"
 )
 
-type LocalRegistry map[string]types.ImageSource
+type LocalRegistry map[string]v1.Image
 
 func LoadRegistry(imagePaths map[string]string) (LocalRegistry, error) {
 	images := LocalRegistry{}
 	for name, path := range imagePaths {
-		ref, err := archive.NewReference(path, nil)
+		image, err := tarball.ImageFromPath(path, nil)
 		if err != nil {
-			return nil, fmt.Errorf("new reference: %w", err)
+			return nil, fmt.Errorf("image from path: %w", err)
 		}
 
-		src, err := ref.NewImageSource(context.TODO(), nil)
-		if err != nil {
-			return nil, fmt.Errorf("new image source: %w", err)
-		}
-
-		images[name] = src
+		images[name] = image
 	}
 
 	return images, nil
@@ -37,7 +30,7 @@ func LoadRegistry(imagePaths map[string]string) (LocalRegistry, error) {
 
 func ServeRegistry(reg LocalRegistry) (string, error) {
 	router := httprouter.New()
-	router.GET("/v2/:name/manifests/:ignored", reg.GetManifest)
+	router.GET("/v2/:name/manifests/:ref", reg.GetManifest)
 	router.GET("/v2/:name/blobs/:digest", reg.GetBlob)
 
 	router.NotFound = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -73,23 +66,42 @@ func (registry LocalRegistry) BuildArgs(port string) []string {
 
 func (registry LocalRegistry) GetManifest(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	name := p.ByName("name")
+	ref := p.ByName("ref")
 
-	src, found := registry[name]
+	logrus.WithFields(logrus.Fields{
+		"accept": r.Header["Accept"],
+	}).Debugf("get manifest for %s at %s", name, ref)
+
+	image, found := registry[name]
 	if !found {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 
-	blob, mt, err := src.GetManifest(r.Context(), nil)
+	mt, err := image.MediaType()
+	if err != nil {
+		logrus.Errorf("failed to get media type: %s", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	blob, err := image.RawManifest()
 	if err != nil {
 		logrus.Errorf("failed to get manifest: %s", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	w.Header().Set("Content-Type", mt)
+	digest, err := image.Digest()
+	if err != nil {
+		logrus.Errorf("failed to get digest: %s", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", string(mt))
 	w.Header().Set("Content-Length", fmt.Sprintf("%d", len(blob)))
-	w.Header().Set("Docker-Content-Digest", digest.FromBytes(blob).String())
+	w.Header().Set("Docker-Content-Digest", digest.String())
 
 	if r.Method == "HEAD" {
 		return
@@ -104,25 +116,94 @@ func (registry LocalRegistry) GetManifest(w http.ResponseWriter, r *http.Request
 
 func (registry LocalRegistry) GetBlob(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	name := p.ByName("name")
+	dig := p.ByName("digest")
 
-	src, found := registry[name]
+	logrus.WithFields(logrus.Fields{
+		"accept": r.Header["Accept"],
+	}).Debugf("get blob %s", dig)
+
+	image, found := registry[name]
 	if !found {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 
-	blob, size, err := src.GetBlob(r.Context(), types.BlobInfo{
-		Digest: digest.Digest(p.ByName("digest")),
-	}, nil)
+	hash, err := v1.NewHash(dig)
 	if err != nil {
-		logrus.Errorf("failed to get blob: %s", err)
+		logrus.Errorf("failed to parse digest: %s", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
+	cfgHash, err := image.ConfigName()
+	if err != nil {
+		logrus.Errorf("failed to get config hash: %s", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	if hash == cfgHash {
+		manifest, err := image.Manifest()
+		if err != nil {
+			logrus.Errorf("get image manifest: %s", err)
+			return
+		}
+
+		cfgBlob, err := image.RawConfigFile()
+		if err != nil {
+			logrus.Errorf("failed to get config file: %s", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", string(manifest.Config.MediaType))
+		w.Header().Set("Content-Length", fmt.Sprintf("%d", len(cfgBlob)))
+
+		if r.Method == "HEAD" {
+			return
+		}
+
+		_, err = w.Write(cfgBlob)
+		if err != nil {
+			logrus.Errorf("write config blob: %s", err)
+			return
+		}
+
+		return
+	}
+
+	layer, err := image.LayerByDigest(hash)
+	if err != nil {
+		logrus.Errorf("failed to get layer: %s", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	size, err := layer.Size()
+	if err != nil {
+		logrus.Errorf("failed to get layer size: %s", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	mt, err := layer.MediaType()
+	if err != nil {
+		logrus.Errorf("failed to get layer media type: %s", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", string(mt))
 	w.Header().Set("Content-Length", fmt.Sprintf("%d", size))
 
 	if r.Method == "HEAD" {
+		return
+	}
+
+	blob, err := layer.Compressed()
+	if err != nil {
+		logrus.Errorf("failed to read layer: %s", err)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
