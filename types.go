@@ -72,6 +72,8 @@ type Config struct {
 	// Each image will be pre-loaded and a build arg will be set to a value
 	// appropriate for setting in 'FROM ...'.
 	ImageArgs []string `json:"image_args" envconfig:"optional"`
+
+	AddHosts string `json:"add_hosts" envconfig:"BUILDKIT_ADD_HOSTS,optional"`
 }
 
 // ImageMetadata is the schema written to manifest.json when producing the

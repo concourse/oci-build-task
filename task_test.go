@@ -507,6 +507,14 @@ func (s *TaskSuite) TestMultiTargetUnpack() {
 	s.Equal(meta.Env, []string{"PATH=/lightness", "OR=ange"})
 }
 
+func (s *TaskSuite) TestAddHosts() {
+	s.req.Config.ContextDir = "testdata/add-hosts"
+	s.req.Config.AddHosts = "test-host=1.2.3.4"
+
+	_, err := s.build()
+	s.NoError(err)
+}
+
 func (s *TaskSuite) build() (task.Response, error) {
 	return task.Build(s.buildkitd, s.outputsDir, s.req)
 }

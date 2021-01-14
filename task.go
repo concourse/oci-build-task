@@ -130,6 +130,12 @@ func Build(buildkitd *Buildkitd, outputsDir string, req Request) (Response, erro
 		)
 	}
 
+	if cfg.AddHosts != "" {
+		buildctlArgs = append(buildctlArgs,
+			"--opt", "add-hosts="+cfg.AddHosts,
+		)
+	}
+
 	builds = append(builds, buildctlArgs)
 	targets = append(targets, "")
 
