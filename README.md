@@ -69,6 +69,16 @@ Next, any of the following optional parameters may be specified:
   DO_THING=false
   ```
 
+* `$BUILDKIT_SECRET_*`: extra secrets which are made available via
+  `--mount=type=secret,id=...`. See [New Docker Build secret information](https://docs.docker.com/develop/develop-images/build_enhancements/#new-docker-build-secret-information) for more information on build secrets.
+
+  For example, running with `BUILDKIT_SECRET_config=my-repo/config` will allow
+  you to do the following...
+
+  ```
+  RUN --mount=type=secret,id=config cat /run/secrets/config
+  ```
+
 * `IMAGE_ARG_*`: params prefixed with `IMAGE_ARG_*` point to image tarballs
   (i.e. `docker save` format) to preload so that they do not have to be fetched
   during the build. An image reference will be provided as the given build arg

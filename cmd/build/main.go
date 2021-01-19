@@ -16,6 +16,8 @@ const buildArgPrefix = "BUILD_ARG_"
 const imageArgPrefix = "IMAGE_ARG_"
 const labelPrefix = "LABEL_"
 
+const buildkitSecretPrefix = "BUILDKIT_SECRET_"
+
 func main() {
 	req := task.Request{
 		ResponsePath: "/dev/null",
@@ -23,6 +25,9 @@ func main() {
 
 	err := envconfig.Init(&req.Config)
 	failIf("parse config from env", err)
+
+	// envconfig does not support maps, so we initialize it here
+	req.Config.BuildkitSecrets = make(map[string]string)
 
 	// carry over BUILD_ARG_* and LABEL_* vars manually
 	for _, env := range os.Environ() {
@@ -45,6 +50,13 @@ func main() {
 				req.Config.Labels,
 				strings.TrimPrefix(env, labelPrefix),
 			)
+		}
+
+		if strings.HasPrefix(env, buildkitSecretPrefix) {
+			seg := strings.SplitN(
+				strings.TrimPrefix(env, buildkitSecretPrefix), "=", 2)
+
+			req.Config.BuildkitSecrets[seg[0]] = seg[1]
 		}
 	}
 
