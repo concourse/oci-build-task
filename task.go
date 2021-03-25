@@ -83,7 +83,7 @@ func Build(buildkitd *Buildkitd, outputsDir string, req Request) (Response, erro
 
 	if _, err := os.Stat(cacheDir); err == nil {
 		buildctlArgs = append(buildctlArgs,
-			"--export-cache", "type=local,mode=min,dest="+cacheDir,
+			"--export-cache", "type=local,mode=max,dest="+cacheDir,
 		)
 	}
 
