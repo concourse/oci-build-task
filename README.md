@@ -79,7 +79,7 @@ Next, any of the following optional parameters may be specified:
   RUN --mount=type=secret,id=config cat /run/secrets/config
   ```
 
-* `IMAGE_ARG_*`: params prefixed with `IMAGE_ARG_*` point to image tarballs
+* `$IMAGE_ARG_*`: params prefixed with `IMAGE_ARG_*` point to image tarballs
   (i.e. `docker save` format) to preload so that they do not have to be fetched
   during the build. An image reference will be provided as the given build arg
   name. For example, `IMAGE_ARG_base_image=ubuntu/image.tar` will set
