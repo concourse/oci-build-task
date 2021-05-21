@@ -1,5 +1,5 @@
 if ! which buildctl >/dev/null || ! which buildkitd >/dev/null; then
-  BUILDKIT_VERSION=0.8.0
+  BUILDKIT_VERSION=0.8.3
   BUILDKIT_URL=https://github.com/moby/buildkit/releases/download/v$BUILDKIT_VERSION/buildkit-v$BUILDKIT_VERSION.linux-amd64.tar.gz
 
   curl -fL "$BUILDKIT_URL" | tar zxf -
