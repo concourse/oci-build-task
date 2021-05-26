@@ -164,6 +164,12 @@ outputs:
 - name: image
 ```
 
+Use [`output_mapping`] to map this output to a different name in your build plan.
+This approach should be used if you're building multiple images in parallel so that
+they can have distinct names.
+
+[`output_mapping`]: https://concourse-ci.org/jobs.html#schema.step.task-step.output_mapping
+
 The output will contain the following files:
 
 * `image.tar`: the OCI image tarball. This tarball can be uploaded to a
