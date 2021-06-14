@@ -79,6 +79,17 @@ Next, any of the following optional parameters may be specified:
   RUN --mount=type=secret,id=config cat /run/secrets/config
   ```
 
+  NOTE: this feature is newer than the latest release (0.7.0) and requires `tag: master` 
+  in your task definition:
+
+  ```
+  image_resource:
+    type: registry-image
+    source:
+      repository: vito/oci-build-task
+      tag: master
+  ```
+
 * `$IMAGE_ARG_*`: params prefixed with `IMAGE_ARG_*` point to image tarballs
   (i.e. `docker save` format) to preload so that they do not have to be fetched
   during the build. An image reference will be provided as the given build arg
