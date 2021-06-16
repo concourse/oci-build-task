@@ -200,6 +200,8 @@ like so:
 ```yaml
 plan:
 - task: build-image
+  params:
+    UNPACK_ROOTFS: true
   output_mapping: {image: my-built-image}
 - task: use-image
   image: my-built-image
