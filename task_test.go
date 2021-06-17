@@ -19,7 +19,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	task "github.com/vito/oci-build-task"
+	task "github.com/concourse/oci-build-task"
 )
 
 type TaskSuite struct {

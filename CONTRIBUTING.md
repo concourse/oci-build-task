@@ -49,7 +49,7 @@ Once this is all done, the tests can be run like so:
 > run the tests as part of the `Dockerfile` - unfortunately image building
 > involves bind-mounting, which `docker build` does not permit.
 
-## pushing to `vito/oci-build-task`
+## pushing to `concourse/oci-build-task`
 
 This repo is automated using GitHub Actions.
 
@@ -58,12 +58,12 @@ good use case to kick the tires on it, especially since their actions run in
 real VMs, so it eliminates the question of testing containers-in-questions.
 
 Anyhow - whenever commits are pushed to a branch, a new image will be pushed to
-`vito/oci-build-task:${branchname}`.
+`concourse/oci-build-task:${branchname}`.
 
-So to try out the latest changes, point to `vito/oci-build-task:master`.
+So to try out the latest changes, point to `concourse/oci-build-task:master`.
 
 Additionally, for each PR an image will be built and pushed to
-`vito/oci-build-task:pr${number}`.
+`concourse/oci-build-task:pr${number}`.
 
 ## shipping a new version
 

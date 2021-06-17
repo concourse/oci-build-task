@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/sirupsen/logrus"
-	task "github.com/vito/oci-build-task"
+	task "github.com/concourse/oci-build-task"
 	"github.com/vrischmann/envconfig"
 )
 

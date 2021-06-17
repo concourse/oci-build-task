@@ -25,8 +25,8 @@ it currently still requires it.
 ## usage
 
 The task implementation is available as an image on Docker Hub at
-[`vito/oci-build-task`](http://hub.docker.com/r/vito/oci-build-task). (This
-image is built from [`Dockerfile`](Dockerfile) using the `oci-build` task
+[`concourse/oci-build-task`](http://hub.docker.com/r/concourse/oci-build-task).
+(This image is built from [`Dockerfile`](Dockerfile) using the `oci-build` task
 itself.)
 
 This task implementation started as a spike to explore patterns around
@@ -42,7 +42,7 @@ First, your task needs to point to the `oci-build-task` image:
 image_resource:
   type: registry-image
   source:
-    repository: vito/oci-build-task
+    repository: concourse/oci-build-task
 ```
 
 ### `params`
@@ -275,7 +275,7 @@ jobs:
       image_resource:
         type: registry-image
         source:
-          repository: vito/oci-build-task
+          repository: concourse/oci-build-task
 
       inputs:
       - name: my-image-src

@@ -6,7 +6,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/u-root/u-root/pkg/termios"
-	task "github.com/vito/oci-build-task"
+	task "github.com/concourse/oci-build-task"
 )
 
 func main() {
