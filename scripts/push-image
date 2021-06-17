@@ -50,8 +50,9 @@ else
     "password": "$DOCKER_PASSWORD"
   },
   "params": {
+    "image": "./image/image.tar",
     "version": "$version",
-    "image": "./image/image.tar"
+    "bump_aliases": true
   }
 }
 EOF
