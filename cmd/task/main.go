@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"os"
 
-	task "github.com/vito/oci-build-task"
 	"github.com/sirupsen/logrus"
 	"github.com/u-root/u-root/pkg/termios"
+	task "github.com/concourse/oci-build-task"
 )
 
 func main() {
@@ -29,7 +29,12 @@ func main() {
 		}
 	}
 
-	buildkitd, err := task.SpawnBuildkitd()
+	var opts task.BuildkitdOpts
+	if _, err := os.Stat("/scratch"); err == nil {
+		opts.RootDir = "/scratch/buildkitd"
+	}
+
+	buildkitd, err := task.SpawnBuildkitd(req, &opts)
 	failIf("start buildkitd", err)
 
 	res, err := task.Build(buildkitd, wd, req)

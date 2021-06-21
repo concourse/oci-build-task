@@ -25,8 +25,8 @@ it currently still requires it.
 ## usage
 
 The task implementation is available as an image on Docker Hub at
-[`vito/oci-build-task`](http://hub.docker.com/r/vito/oci-build-task). (This
-image is built from [`Dockerfile`](Dockerfile) using the `oci-build` task
+[`concourse/oci-build-task`](http://hub.docker.com/r/concourse/oci-build-task).
+(This image is built from [`Dockerfile`](Dockerfile) using the `oci-build` task
 itself.)
 
 This task implementation started as a spike to explore patterns around
@@ -42,7 +42,7 @@ First, your task needs to point to the `oci-build-task` image:
 image_resource:
   type: registry-image
   source:
-    repository: vito/oci-build-task
+    repository: concourse/oci-build-task
 ```
 
 ### `params`
@@ -85,10 +85,34 @@ Next, any of the following optional parameters may be specified:
   DO_THING=false
   ```
 
+* `$BUILDKIT_SECRET_*`: extra secrets which are made available via
+  `--mount=type=secret,id=...`. See [New Docker Build secret information](https://docs.docker.com/develop/develop-images/build_enhancements/#new-docker-build-secret-information) for more information on build secrets.
+
+  For example, running with `BUILDKIT_SECRET_config=my-repo/config` will allow
+  you to do the following...
+
+  ```
+  RUN --mount=type=secret,id=config cat /run/secrets/config
+  ```
+
+* `$IMAGE_ARG_*`: params prefixed with `IMAGE_ARG_*` point to image tarballs
+  (i.e. `docker save` format) to preload so that they do not have to be fetched
+  during the build. An image reference will be provided as the given build arg
+  name. For example, `IMAGE_ARG_base_image=ubuntu/image.tar` will set
+  `base_image` to a local image reference for using `ubuntu/image.tar`.
+
+* `$LABEL_*`: params prefixed with `LABEL_` will be set as image labels.
+  For example `LABEL_foo=bar`, will set the `foo` label to `bar`.
+
+* `$LABELS_FILE` (default empty): path to a file containing labels in
+  the form `foo=bar`, one per line. Empty lines are skipped.
+
 * `$TARGET` (default empty): a target build stage to build.
 
 * `$TARGET_FILE` (default empty): path to a file containing the name of the
   target build stage to build.
+
+* `$REGISTRY_MIRRORS` (default empty): registry mirrors to use for `docker.io`.
 
 * `$UNPACK_ROOTFS` (default `false`): unpack the image as Concourse's image
   format (`rootfs/`, `metadata.json`) for use with the [`image` task step
@@ -156,6 +180,12 @@ outputs:
 - name: image
 ```
 
+Use [`output_mapping`] to map this output to a different name in your build plan.
+This approach should be used if you're building multiple images in parallel so that
+they can have distinct names.
+
+[`output_mapping`]: https://concourse-ci.org/jobs.html#schema.step.task-step.output_mapping
+
 The output will contain the following files:
 
 * `image.tar`: the OCI image tarball. This tarball can be uploaded to a
@@ -186,6 +216,8 @@ like so:
 ```yaml
 plan:
 - task: build-image
+  params:
+    UNPACK_ROOTFS: true
   output_mapping: {image: my-built-image}
 - task: use-image
   image: my-built-image
@@ -231,7 +263,7 @@ resource](https://github.com/concourse/registry-image-resource) like so:
 
 ```yaml
 resources:
-- get: my-image-src
+- name: my-image-src
   type: git
   source:
     uri: https://github.com/...
@@ -259,7 +291,7 @@ jobs:
       image_resource:
         type: registry-image
         source:
-          repository: vito/oci-build-task
+          repository: concourse/oci-build-task
 
       inputs:
       - name: my-image-src

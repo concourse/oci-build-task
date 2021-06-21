@@ -2,6 +2,7 @@ package task
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -26,7 +27,6 @@ func Build(buildkitd *Buildkitd, outputsDir string, req Request) (Response, erro
 		return Response{}, errors.Wrap(err, "config")
 	}
 
-	imageDir := filepath.Join(outputsDir, "image")
 	cacheDir := filepath.Join(outputsDir, "cache")
 
 	res := Response{
@@ -45,37 +45,9 @@ func Build(buildkitd *Buildkitd, outputsDir string, req Request) (Response, erro
 		"--opt", "filename=" + dockerfileName,
 	}
 
-	var imagePath, digestPath string
-	if _, err := os.Stat(imageDir); err == nil {
-		imagePath = filepath.Join(imageDir, "image.tar")
-		digestPath = filepath.Join(imageDir, "digest")
-
+	for _, arg := range cfg.Labels {
 		buildctlArgs = append(buildctlArgs,
-			"--output", "type=docker,dest="+imagePath,
-		)
-	}
-
-	if _, err := os.Stat(cacheDir); err == nil {
-		buildctlArgs = append(buildctlArgs,
-			"--export-cache", "type=local,mode=min,dest="+cacheDir,
-		)
-	}
-
-	if _, err := os.Stat(filepath.Join(cacheDir, "index.json")); err == nil {
-		buildctlArgs = append(buildctlArgs,
-			"--import-cache", "type=local,src="+cacheDir,
-		)
-	}
-
-	if cfg.Target != "" {
-		buildctlArgs = append(buildctlArgs,
-			"--opt", "target="+cfg.Target,
-		)
-	}
-
-	if cfg.BuildkitSSH != "" {
-		buildctlArgs = append(buildctlArgs,
-			"--ssh", cfg.BuildkitSSH,
+			"--opt", "label:"+arg,
 		)
 	}
 
@@ -85,33 +57,141 @@ func Build(buildkitd *Buildkitd, outputsDir string, req Request) (Response, erro
 		)
 	}
 
-	logrus.WithFields(logrus.Fields{
-		"buildctl-args": buildctlArgs,
-	}).Debug("building")
+	if len(req.Config.ImageArgs) > 0 {
+		imagePaths := map[string]string{}
+		for _, arg := range req.Config.ImageArgs {
+			segs := strings.SplitN(arg, "=", 2)
+			imagePaths[segs[0]] = segs[1]
+		}
 
-	err = buildctl(buildkitd.Addr, os.Stdout, buildctlArgs...)
-	if err != nil {
-		return Response{}, errors.Wrap(err, "build")
+		registry, err := LoadRegistry(imagePaths)
+		if err != nil {
+			return Response{}, fmt.Errorf("create local image registry: %w", err)
+		}
+
+		port, err := ServeRegistry(registry)
+		if err != nil {
+			return Response{}, fmt.Errorf("create local image registry: %w", err)
+		}
+
+		for _, arg := range registry.BuildArgs(port) {
+			buildctlArgs = append(buildctlArgs,
+				"--opt", "build-arg:"+arg,
+			)
+		}
 	}
 
-	if imagePath != "" {
+	if _, err := os.Stat(cacheDir); err == nil {
+		buildctlArgs = append(buildctlArgs,
+			"--export-cache", "type=local,mode=max,dest="+cacheDir,
+		)
+	}
+
+	for id, src := range cfg.BuildkitSecrets {
+		buildctlArgs = append(buildctlArgs,
+			"--secret", "id="+id+",src="+src,
+		)
+	}
+
+	var builds [][]string
+	var targets []string
+	var imagePaths []string
+
+	for _, t := range cfg.AdditionalTargets {
+		// prevent re-use of the buildctlArgs slice as it is appended to later on,
+		// and that would clobber args for all targets if the slice was re-used
+		targetArgs := make([]string, len(buildctlArgs))
+		copy(targetArgs, buildctlArgs)
+
+		targetArgs = append(targetArgs, "--opt", "target="+t)
+
+		targetDir := filepath.Join(outputsDir, t)
+
+		if _, err := os.Stat(targetDir); err == nil {
+			imagePath := filepath.Join(targetDir, "image.tar")
+			imagePaths = append(imagePaths, imagePath)
+
+			targetArgs = append(targetArgs,
+				"--output", "type=docker,dest="+imagePath,
+			)
+		}
+
+		builds = append(builds, targetArgs)
+		targets = append(targets, t)
+	}
+
+	finalTargetDir := filepath.Join(outputsDir, "image")
+	if _, err := os.Stat(finalTargetDir); err == nil {
+		imagePath := filepath.Join(finalTargetDir, "image.tar")
+		imagePaths = append(imagePaths, imagePath)
+
+		buildctlArgs = append(buildctlArgs,
+			"--output", "type=docker,dest="+imagePath,
+		)
+	}
+
+	if cfg.Target != "" {
+		buildctlArgs = append(buildctlArgs,
+			"--opt", "target="+cfg.Target,
+		)
+	}
+
+	if cfg.AddHosts != "" {
+		buildctlArgs = append(buildctlArgs,
+			"--opt", "add-hosts="+cfg.AddHosts,
+		)
+	}
+
+	if cfg.BuildkitSSH != "" {
+		buildctlArgs = append(buildctlArgs,
+			"--ssh", cfg.BuildkitSSH,
+		)
+	}
+
+	builds = append(builds, buildctlArgs)
+	targets = append(targets, "")
+
+	for i, args := range builds {
+		if i > 0 {
+			fmt.Fprintln(os.Stderr)
+		}
+
+		targetName := targets[i]
+		if targetName == "" {
+			logrus.Info("building image")
+		} else {
+			logrus.Infof("building target '%s'", targetName)
+		}
+
+		if _, err := os.Stat(filepath.Join(cacheDir, "index.json")); err == nil {
+			args = append(args,
+				"--import-cache", "type=local,src="+cacheDir,
+			)
+		}
+
+		logrus.Debugf("running buildctl %s", strings.Join(args, " "))
+
+		err = buildctl(buildkitd.Addr, os.Stdout, args...)
+		if err != nil {
+			return Response{}, errors.Wrap(err, "build")
+		}
+	}
+
+	for _, imagePath := range imagePaths {
 		image, err := tarball.ImageFromPath(imagePath, nil)
 		if err != nil {
 			return Response{}, errors.Wrap(err, "open oci image")
 		}
 
-		manifest, err := image.Manifest()
-		if err != nil {
-			return Response{}, errors.Wrap(err, "get image digest")
-		}
+		outputDir := filepath.Dir(imagePath)
 
-		err = ioutil.WriteFile(digestPath, []byte(manifest.Config.Digest.String()), 0644)
+		err = writeDigest(outputDir, image)
 		if err != nil {
-			return Response{}, errors.Wrap(err, "write digest")
+			return Response{}, err
 		}
 
 		if req.Config.UnpackRootfs {
-			err = unpackRootfs(imageDir, image, cfg)
+			err = unpackRootfs(outputDir, image, cfg)
 			if err != nil {
 				return Response{}, errors.Wrap(err, "unpack rootfs")
 			}
@@ -119,6 +199,22 @@ func Build(buildkitd *Buildkitd, outputsDir string, req Request) (Response, erro
 	}
 
 	return res, nil
+}
+
+func writeDigest(dest string, image v1.Image) error {
+	digestPath := filepath.Join(dest, "digest")
+
+	manifest, err := image.Manifest()
+	if err != nil {
+		return errors.Wrap(err, "get image digest")
+	}
+
+	err = ioutil.WriteFile(digestPath, []byte(manifest.Config.Digest.String()), 0644)
+	if err != nil {
+		return errors.Wrap(err, "write digest file")
+	}
+
+	return nil
 }
 
 func unpackRootfs(dest string, image v1.Image, cfg Config) error {
@@ -151,19 +247,9 @@ func writeImageMetadata(metadataPath string, image v1.Image) error {
 		return errors.Wrap(err, "create metadata file")
 	}
 
-	env := cfg.Config.Env
-	if len(env) == 0 {
-		env = cfg.ContainerConfig.Env
-	}
-
-	user := cfg.Config.User
-	if user == "" {
-		user = cfg.ContainerConfig.User
-	}
-
 	err = json.NewEncoder(meta).Encode(ImageMetadata{
-		Env:  env,
-		User: user,
+		Env:  cfg.Config.Env,
+		User: cfg.Config.User,
 	})
 	if err != nil {
 		return errors.Wrap(err, "encode metadata")
@@ -208,6 +294,22 @@ func sanitize(cfg *Config) error {
 			}
 
 			cfg.BuildArgs = append(cfg.BuildArgs, arg)
+		}
+	}
+
+	if cfg.LabelsFile != "" {
+		Labels, err := ioutil.ReadFile(cfg.LabelsFile)
+		if err != nil {
+			return errors.Wrap(err, "read labels file")
+		}
+
+		for _, arg := range strings.Split(string(Labels), "\n") {
+			if len(arg) == 0 {
+				// skip blank lines
+				continue
+			}
+
+			cfg.Labels = append(cfg.Labels, arg)
 		}
 	}
 

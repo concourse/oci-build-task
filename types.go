@@ -50,16 +50,33 @@ type Config struct {
 	DockerfilePath string `json:"dockerfile,omitempty" envconfig:"DOCKERFILE,optional"`
 	BuildkitSSH    string `json:"buildkit_ssh"         envconfig:"optional"`
 
-	Target     string `json:"target"      envconfig:"optional"`
-	TargetFile string `json:"target_file" envconfig:"optional"`
+	Target            string   `json:"target"      envconfig:"optional"`
+	TargetFile        string   `json:"target_file" envconfig:"optional"`
+	AdditionalTargets []string `json:"additional_targets" envconfig:"ADDITIONAL_TARGETS,optional"`
 
 	BuildArgs     []string `json:"build_args"      envconfig:"optional"`
 	BuildArgsFile string   `json:"build_args_file" envconfig:"optional"`
+
+	RegistryMirrors []string `json:"registry_mirrors" envconfig:"REGISTRY_MIRRORS,optional"`
+
+	Labels     []string `json:"labels"      envconfig:"optional"`
+	LabelsFile string   `json:"labels_file" envconfig:"optional"`
+
+	BuildkitSecrets map[string]string `json:"buildkit_secrets" envconfig:"optional"`
 
 	// Unpack the OCI image into Concourse's rootfs/ + metadata.json image scheme.
 	//
 	// Theoretically this would go away if/when we standardize on OCI.
 	UnpackRootfs bool `json:"unpack_rootfs" envconfig:"optional"`
+
+	// Images to pre-load in order to avoid fetching at build time. Mapping from
+	// build arg name to OCI image tarball path.
+	//
+	// Each image will be pre-loaded and a build arg will be set to a value
+	// appropriate for setting in 'FROM ...'.
+	ImageArgs []string `json:"image_args" envconfig:"optional"`
+
+	AddHosts string `json:"add_hosts" envconfig:"BUILDKIT_ADD_HOSTS,optional"`
 }
 
 // ImageMetadata is the schema written to manifest.json when producing the

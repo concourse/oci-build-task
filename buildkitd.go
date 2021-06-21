@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/BurntSushi/toml"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -22,13 +23,23 @@ type Buildkitd struct {
 	proc    *os.Process
 }
 
-func SpawnBuildkitd() (*Buildkitd, error) {
+// BuildkitdOpts to provide to Buildkitd
+type BuildkitdOpts struct {
+	RootDir    string
+	ConfigPath string
+}
+
+func SpawnBuildkitd(req Request, opts *BuildkitdOpts) (*Buildkitd, error) {
 	err := run(os.Stdout, "setup-cgroups")
 	if err != nil {
 		return nil, errors.Wrap(err, "setup cgroups")
 	}
 
 	rootDir := filepath.Join(os.TempDir(), "buildkitd")
+	if opts != nil && opts.RootDir != "" {
+		rootDir = opts.RootDir
+	}
+
 	err = os.MkdirAll(rootDir, 0755)
 	if err != nil {
 		return nil, errors.Wrap(err, "create root dir")
@@ -37,14 +48,26 @@ func SpawnBuildkitd() (*Buildkitd, error) {
 	sockPath := filepath.Join(rootDir, "buildkitd.sock")
 	logPath := filepath.Join(rootDir, "buildkitd.log")
 
-	addr := (&url.URL{
-		Scheme: "unix",
-		Path:   sockPath,
-	}).String()
+	configPath := filepath.Join(rootDir, "builtkitd.toml")
+	if opts != nil && opts.ConfigPath != "" {
+		configPath = opts.ConfigPath
+	}
+
+	err = generateConfig(req, configPath)
+	if err != nil {
+		return nil, errors.Wrap(err, "generate config")
+	}
+
+	addr := (&url.URL{Scheme: "unix", Path: sockPath}).String()
 
 	buildkitdFlags := []string{
 		"--root", rootDir,
 		"--addr", addr,
+		"--config", configPath,
+	}
+
+	if req.Config.Debug {
+		buildkitdFlags = append(buildkitdFlags, "--debug")
 	}
 
 	var cmd *exec.Cmd
@@ -120,6 +143,37 @@ func (buildkitd *Buildkitd) Cleanup() error {
 	}
 
 	return nil
+}
+
+func generateConfig(req Request, configPath string) error {
+	var config BuildkitdConfig
+
+	if len(req.Config.RegistryMirrors) > 0 {
+		var registryConfigs map[string]RegistryConfig
+		registryConfigs = make(map[string]RegistryConfig)
+		registryConfigs["docker.io"] = RegistryConfig{
+			Mirrors: req.Config.RegistryMirrors,
+		}
+
+		config.Registries = registryConfigs
+	}
+
+	err := os.MkdirAll(filepath.Dir(configPath), 0700)
+	if err != nil {
+		return err
+	}
+
+	f, err := os.Create(configPath)
+	if err != nil {
+		return err
+	}
+
+	err = toml.NewEncoder(f).Encode(config)
+	if err != nil {
+		return err
+	}
+
+	return f.Close()
 }
 
 func dumpLogFile(logPath string) {

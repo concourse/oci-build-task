@@ -4,7 +4,7 @@ package task
 
 import (
 	"archive/tar"
-	"compress/gzip"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -13,7 +13,7 @@ import (
 
 	"github.com/concourse/go-archive/tarfs"
 	"github.com/fatih/color"
-	"github.com/google/go-containerregistry/pkg/v1"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/sirupsen/logrus"
 	"github.com/vbauerster/mpb"
 	"github.com/vbauerster/mpb/decor"
@@ -63,7 +63,7 @@ func unpackImage(dest string, img v1.Image, debug bool) error {
 	for i, layer := range layers {
 		logrus.Debugf("extracting layer %d of %d", i+1, len(layers))
 
-		err := extractLayer(dest, layer, bars[i], chown)
+		err = extractLayer(dest, layer, bars[i], chown)
 		if err != nil {
 			return err
 		}
@@ -75,17 +75,14 @@ func unpackImage(dest string, img v1.Image, debug bool) error {
 }
 
 func extractLayer(dest string, layer v1.Layer, bar *mpb.Bar, chown bool) error {
-	r, err := layer.Compressed()
+	r, err := layer.Uncompressed()
 	if err != nil {
-		return err
+		return fmt.Errorf("compressed: %w", err)
 	}
 
-	gr, err := gzip.NewReader(bar.ProxyReader(r))
-	if err != nil {
-		return err
-	}
+	defer r.Close()
 
-	tr := tar.NewReader(gr)
+	tr := tar.NewReader(bar.ProxyReader(r))
 
 	for {
 		hdr, err := tr.Next()
@@ -144,25 +141,15 @@ func extractLayer(dest string, layer v1.Layer, bar *mpb.Bar, chown bool) error {
 			if !(fi.IsDir() && hdr.Typeflag == tar.TypeDir) {
 				log.Debugf("removing existing path")
 				if err := os.RemoveAll(path); err != nil {
-					return err
+					return fmt.Errorf("remove: %w", err)
 				}
 			}
 		}
 
 		if err := tarfs.ExtractEntry(hdr, dest, tr, chown); err != nil {
 			log.Debugf("extracting")
-			return err
+			return fmt.Errorf("extract entry: %w", err)
 		}
-	}
-
-	err = gr.Close()
-	if err != nil {
-		return err
-	}
-
-	err = r.Close()
-	if err != nil {
-		return err
 	}
 
 	return nil

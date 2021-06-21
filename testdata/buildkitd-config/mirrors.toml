@@ -1,0 +1,3 @@
+[registry]
+  [registry."docker.io"]
+    mirrors = ["hub.docker.io"]

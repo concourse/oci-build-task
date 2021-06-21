@@ -2,7 +2,8 @@
 
 set -e -u
 
-touch additional_tags
+tag=""
+version=""
 
 case $GITHUB_REF in
   refs/heads/*)
@@ -10,19 +11,15 @@ case $GITHUB_REF in
     ;;
 
   refs/tags/v[0-9]*)
-    tag=latest
     version=$(echo $GITHUB_REF | sed 's|refs/tags/v||')
-
-    {
-      echo $version | cut -d. -f1
-      echo $version | cut -d. -f1,2
-      echo $version | cut -d. -f1,2,3
-    } | uniq >> additional_tags
-
     ;;
 
   refs/tags/*)
     tag=$(echo $GITHUB_REF | sed 's|refs/tags/||')
+    ;;
+
+  refs/pull/[0-9]*/merge)
+    tag=pr$(echo $GITHUB_REF | sed 's|refs/pull/\([0-9]\+\)/merge|\1|')
     ;;
 
   *)
@@ -30,17 +27,33 @@ case $GITHUB_REF in
     ;;
 esac
 
-exec /opt/resource/out . <<EOF
+if [[ -n "$tag" ]]; then
+  exec /opt/resource/out . <<EOF
 {
   "source": {
-    "repository": "vito/oci-build-task",
-    "tag": "$tag",
+    "repository": "concourse/oci-build-task",
+    "username": "$DOCKER_USERNAME",
+    "password": "$DOCKER_PASSWORD",
+    "tag": "$tag"
+  },
+  "params": {
+    "image": "./image/image.tar"
+  }
+}
+EOF
+else
+  exec /opt/resource/out . <<EOF
+{
+  "source": {
+    "repository": "concourse/oci-build-task",
     "username": "$DOCKER_USERNAME",
     "password": "$DOCKER_PASSWORD"
   },
   "params": {
     "image": "./image/image.tar",
-    "additional_tags": "./additional_tags"
+    "version": "$version",
+    "bump_aliases": true
   }
 }
 EOF
+fi
