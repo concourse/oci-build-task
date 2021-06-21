@@ -142,6 +142,12 @@ func Build(buildkitd *Buildkitd, outputsDir string, req Request) (Response, erro
 		)
 	}
 
+	if cfg.BuildkitSSH != "" {
+		buildctlArgs = append(buildctlArgs,
+			"--ssh", cfg.BuildkitSSH,
+		)
+	}
+
 	builds = append(builds, buildctlArgs)
 	targets = append(targets, "")
 

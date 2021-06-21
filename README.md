@@ -55,6 +55,22 @@ Next, any of the following optional parameters may be specified:
 * `$DOCKERFILE` (default `$CONTEXT/Dockerfile`): the path to the `Dockerfile`
   to build.
 
+* `$BUILDKIT_SSH` your ssh key location that is mounted in your `Dockerfile`. This is
+  generally used for pulling dependencies from private repositories. 
+
+  For Example. In your `Dockerfile`, you can mount a key as
+  ```
+  RUN --mount=type=ssh,id=github_ssh_key pip install -U -r ./hats/requirements-test.txt
+  ``` 
+
+  Then in your Concourse YAML configuration:
+  ```
+  params:
+    BUILDKIT_SSH: github_ssh_key=<PATH-TO-YOUR-KEY>
+  ```
+
+  Read more about ssh mount [here](https://docs.docker.com/develop/develop-images/build_enhancements/).
+
 * `$BUILD_ARG_*`: params prefixed with `BUILD_ARG_` will be provided as build
   args. For example `BUILD_ARG_foo=bar`, will set the `foo` build arg as `bar`.
 
