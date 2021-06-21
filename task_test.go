@@ -11,6 +11,7 @@ import (
 	"reflect"
 	"testing"
 
+	task "github.com/concourse/oci-build-task"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/registry"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
@@ -19,7 +20,6 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	task "github.com/concourse/oci-build-task"
 )
 
 type TaskSuite struct {
@@ -116,7 +116,7 @@ func (s *TaskSuite) TestTarget() {
 
 func (s *TaskSuite) TestBuildkitSSH() {
 	s.req.Config.ContextDir = "testdata/buildkit-ssh"
-	s.req.Config.BuildkitSSH = "my_ssh_key=./id_rsa_test"
+	s.req.Config.BuildkitSSH = "my_ssh_key=testdata/buildkit-ssh/id_rsa_test"
 
 	_, err := s.build()
 	s.NoError(err)
