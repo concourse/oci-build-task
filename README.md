@@ -101,6 +101,11 @@ Next, any of the following optional parameters may be specified:
   name. For example, `IMAGE_ARG_base_image=ubuntu/image.tar` will set
   `base_image` to a local image reference for using `ubuntu/image.tar`.
 
+* `IMAGE_PLATFORM`: Specify the target platform to build the image for. For
+  example `IMAGE_PLATFORM=linux/arm64` will build the image for the Linux OS
+  and `arm64` architecture. By default, images will be built for the current
+  worker's platform that the task is running on.
+
 * `$LABEL_*`: params prefixed with `LABEL_` will be set as image labels.
   For example `LABEL_foo=bar`, will set the `foo` label to `bar`.
 
