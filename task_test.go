@@ -537,6 +537,15 @@ func (s *TaskSuite) TestImagePlatform() {
 
 	_, err := s.build()
 	s.NoError(err)
+
+	image, err := tarball.ImageFromPath(s.imagePath("image.tar"), nil)
+	s.NoError(err)
+
+	configFile, err := image.ConfigFile()
+	s.NoError(err)
+
+	s.Equal("linux", configFile.OS)
+	s.Equal("arm64", configFile.Architecture)
 }
 
 func (s *TaskSuite) build() (task.Response, error) {
