@@ -148,6 +148,12 @@ func Build(buildkitd *Buildkitd, outputsDir string, req Request) (Response, erro
 		)
 	}
 
+	if req.Config.ImagePlatform != "" {
+		buildctlArgs = append(buildctlArgs,
+			"--opt", "platform="+req.Config.ImagePlatform,
+		)
+	}
+
 	builds = append(builds, buildctlArgs)
 	targets = append(targets, "")
 
