@@ -67,6 +67,8 @@ func unpackImage(dest string, img v1.Image, debug bool) error {
 		if err != nil {
 			return err
 		}
+
+		bars[i].SetTotal(bars[i].Current(), true)
 	}
 
 	progress.Wait()
