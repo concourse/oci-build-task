@@ -5,6 +5,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"strings"
 
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
@@ -12,7 +13,11 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type LocalRegistry map[string]v1.Image
+type ImageArg struct {
+	Image   v1.Image
+	ArgName string
+}
+type LocalRegistry map[string]ImageArg
 
 func LoadRegistry(imagePaths map[string]string) (LocalRegistry, error) {
 	images := LocalRegistry{}
@@ -22,7 +27,7 @@ func LoadRegistry(imagePaths map[string]string) (LocalRegistry, error) {
 			return nil, fmt.Errorf("image from path: %w", err)
 		}
 
-		images[name] = image
+		images[strings.ToLower(name)] = ImageArg{Image: image, ArgName: name}
 	}
 
 	return images, nil
@@ -57,8 +62,8 @@ func ServeRegistry(reg LocalRegistry) (string, error) {
 
 func (registry LocalRegistry) BuildArgs(port string) []string {
 	var buildArgs []string
-	for name := range registry {
-		buildArgs = append(buildArgs, fmt.Sprintf("%s=localhost:%s/%s", name, port, name))
+	for name, image := range registry {
+		buildArgs = append(buildArgs, fmt.Sprintf("%s=localhost:%s/%s", image.ArgName, port, name))
 	}
 
 	return buildArgs
@@ -72,11 +77,12 @@ func (registry LocalRegistry) GetManifest(w http.ResponseWriter, r *http.Request
 		"accept": r.Header["Accept"],
 	}).Debugf("get manifest for %s at %s", name, ref)
 
-	image, found := registry[name]
+	img, found := registry[name]
 	if !found {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
+	image := img.Image
 
 	mt, err := image.MediaType()
 	if err != nil {
@@ -122,11 +128,12 @@ func (registry LocalRegistry) GetBlob(w http.ResponseWriter, r *http.Request, p 
 		"accept": r.Header["Accept"],
 	}).Debugf("get blob %s", dig)
 
-	image, found := registry[name]
+	img, found := registry[name]
 	if !found {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
+	image := img.Image
 
 	hash, err := v1.NewHash(dig)
 	if err != nil {

@@ -1,0 +1,7 @@
+ARG FIRST_IMAGE
+
+FROM ${FIRST_IMAGE}
+USER banana
+ENV PATH=/darkness
+ENV BA=nana
+COPY Dockerfile.uppercase /Dockerfile.second
