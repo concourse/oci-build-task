@@ -49,6 +49,12 @@ image_resource:
 
 Next, any of the following optional parameters may be specified:
 
+_(As a convention in the list below, all task parameters are specified with a
+ leading `$`, in order to remind their environment variable nature, just like
+ shell variables that one would use with the `$VAR` syntax. When specifying
+ those in the `params:` YAML dictionary of a task definition though, the
+ leading `$` is irrelevant, as readers will notice in the examples below.)_
+
 * `$CONTEXT` (default `.`): the path to the directory to provide as the context
   for the build.
 
@@ -101,7 +107,7 @@ Next, any of the following optional parameters may be specified:
   name. For example, `IMAGE_ARG_base_image=ubuntu/image.tar` will set
   `base_image` to a local image reference for using `ubuntu/image.tar`.
 
-* `IMAGE_PLATFORM`: Specify the target platform to build the image for. For
+* `$IMAGE_PLATFORM`: Specify the target platform to build the image for. For
   example `IMAGE_PLATFORM=linux/arm64` will build the image for the Linux OS
   and `arm64` architecture. By default, images will be built for the current
   worker's platform that the task is running on.
