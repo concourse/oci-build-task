@@ -38,6 +38,9 @@ func main() {
 	failIf("start buildkitd", err)
 
 	res, err := task.Build(buildkitd, wd, req)
+	if err != nil {
+		buildkitd.Cleanup()
+	}
 	failIf("build", err)
 
 	err = buildkitd.Cleanup()
