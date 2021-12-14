@@ -112,16 +112,25 @@ Next, any of the following optional parameters may be specified:
 * `$LABELS_FILE` (default empty): path to a file containing labels in
   the form `foo=bar`, one per line. Empty lines are skipped.
 
-* `$TARGET` (default empty): a target build stage to build.
+* `$TARGET` (default empty): a target build stage to build, as named with the
+  `FROM … AS <NAME>` syntax in your `Dockerfile`.
 
 * `$TARGET_FILE` (default empty): path to a file containing the name of the
   target build stage to build.
+
+* `$ADDITIONAL_TARGETS` (default empty): a comma-separated (`,`) list of
+  additional target build stages to build.
 
 * `$REGISTRY_MIRRORS` (default empty): registry mirrors to use for `docker.io`.
 
 * `$UNPACK_ROOTFS` (default `false`): unpack the image as Concourse's image
   format (`rootfs/`, `metadata.json`) for use with the [`image` task step
   option](https://concourse-ci.org/jobs.html#schema.step.task-step.image).
+
+* `$BUILDKIT_ADD_HOSTS` (default empty): extra host definitions for `buildkit`
+  to properly resolve custom hostnames. The value is as comma-separated
+  (`,`) list of key-value pairs (using syntax `hostname=ip-address`), each
+  defining an IP address for resolving some custom hostname.
 
 > Note: this is the main pain point with reusable tasks - env vars are kind of
 > an awkward way to configure a task. Once the RFC lands these will turn into a
