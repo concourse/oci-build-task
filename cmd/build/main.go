@@ -60,6 +60,12 @@ func main() {
 		}
 	}
 
+	//CheckForDockerCredentials only returns an error, if there
+	//was a problem saving the credentials
+	//No credentials will just be ignored
+	err = task.CheckForDockerCredentials()
+	failIf("docker auth check", err)
+
 	logrus.Debugf("read config from env: %#v\n", req.Config)
 
 	reqPayload, err := json.Marshal(req)
