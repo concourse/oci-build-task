@@ -118,6 +118,20 @@ Next, any of the following optional parameters may be specified:
 * `$TARGET_FILE` (default empty): path to a file containing the name of the
   target build stage to build.
 
+* `$PUSH` (default empty): If non-empty the image will use the PUSH variable
+  as name and push the image. If credentials is required, they can be supplied
+  as three seperate parameters `$DOCKER_USERNAME`, `DOCKER_PASSWORD` and 
+  `DOCKER_REGISTRY`
+
+  Example here would push the image to docker.io/concourse/oci-build.task
+  ```
+  DOCKER_USERNAME: ((docker_username.secret))
+  DOCKER_PASSWORD: ((docker_password.secret))
+  DOCKER_REGISTRY: ((docker_registry.secret))
+  PUSH: docker.io/concourse/oci-build.task
+
+  ```
+
 * `$ADDITIONAL_TARGETS` (default empty): a comma-separated (`,`) list of
   additional target build stages to build.
 
