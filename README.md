@@ -91,7 +91,7 @@ _(As a convention in the list below, all task parameters are specified with a
   DO_THING=false
   ```
 
-* `$BUILDKIT_SECRET_*`: extra secrets which are made available via
+* `$BUILDKIT_SECRET_*`: files with extra secrets which are made available via
   `--mount=type=secret,id=...`. See [New Docker Build secret information](https://docs.docker.com/develop/develop-images/build_enhancements/#new-docker-build-secret-information) for more information on build secrets.
 
   For example, running with `BUILDKIT_SECRET_config=my-repo/config` will allow
@@ -100,6 +100,13 @@ _(As a convention in the list below, all task parameters are specified with a
   ```
   RUN --mount=type=secret,id=config cat /run/secrets/config
   ```
+
+* `$BUILDKIT_SECRETTEXT_*`: literal text of extra secrets to be made available
+  via the same mechanism described for `$BUILDKIT_SECRET_*` above. The
+  difference is that this is easier to use with credential managers:
+
+  `BUILDKIT_SECRETTEXT_mysecret=(( mysecret ))` puts the content that
+  `(( mysecret ))` expands to in `/run/secrets/mysecret`.
 
 * `$IMAGE_ARG_*`: params prefixed with `IMAGE_ARG_*` point to image tarballs
   (i.e. `docker save` format) to preload so that they do not have to be fetched
