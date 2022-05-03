@@ -3,10 +3,8 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -66,14 +64,8 @@ func main() {
 			seg := strings.SplitN(
 				strings.TrimPrefix(env, buildkitSecretTextPrefix), "=", 2)
 
-			// Q: Filter for environment variable names that are also legal shell variable names to disallow ../ etc?
-			secretDir := filepath.Join(os.TempDir(), "buildkit-secrets")
-			secretFile := filepath.Join(secretDir, seg[0])
-			err := os.MkdirAll(secretDir, 0700)
-			failIf("create secret directory", err)
-			err = ioutil.WriteFile(secretFile, []byte(seg[1]), 0600)
-			failIf("write to secret directory", err)
-			req.Config.BuildkitSecrets[seg[0]] = secretFile
+			err := task.StoreSecret(&req, seg[0], seg[1])
+			failIf("store secret provided as text", err)
 		}
 	}
 

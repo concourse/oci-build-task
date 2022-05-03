@@ -250,6 +250,15 @@ func (s *TaskSuite) TestUnpackRootfs() {
 	s.Equal(meta.Env, []string{"PATH=/darkness", "BA=nana"})
 }
 
+func (s *TaskSuite) TestBuildkitTextualSecrets() {
+	s.req.Config.ContextDir = "testdata/buildkit-secret"
+	err := task.StoreSecret(&s.req, "secret", "hello-world")
+	s.NoError(err)
+
+	_, err = s.build()
+	s.NoError(err)
+}
+
 func (s *TaskSuite) TestBuildkitSecrets() {
 	s.req.Config.ContextDir = "testdata/buildkit-secret"
 	s.req.Config.BuildkitSecrets = map[string]string{"secret": "testdata/buildkit-secret/secret"}

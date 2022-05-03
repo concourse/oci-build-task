@@ -16,6 +16,25 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// Q: Audit name to not include "/"?
+func StoreSecret(req *Request, name, value string) error {
+	secretDir := filepath.Join(os.TempDir(), "buildkit-secrets")
+	secretFile := filepath.Join(secretDir, name)
+	err := os.MkdirAll(secretDir, 0700)
+	if err != nil {
+		return fmt.Errorf("unable to create secret directory: %w", err)
+	}
+	err = ioutil.WriteFile(secretFile, []byte(value), 0600)
+	if err != nil {
+		return fmt.Errorf("unable to write secret to file: %w", err)
+	}
+	if req.Config.BuildkitSecrets == nil {
+		req.Config.BuildkitSecrets = make(map[string]string, 1)
+	}
+	req.Config.BuildkitSecrets[name] = secretFile
+	return nil
+}
+
 func Build(buildkitd *Buildkitd, outputsDir string, req Request) (Response, error) {
 	if req.Config.Debug {
 		logrus.SetLevel(logrus.DebugLevel)
