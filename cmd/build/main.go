@@ -17,6 +17,7 @@ const imageArgPrefix = "IMAGE_ARG_"
 const labelPrefix = "LABEL_"
 
 const buildkitSecretPrefix = "BUILDKIT_SECRET_"
+const buildkitSecretTextPrefix = "BUILDKIT_SECRETTEXT_"
 
 func main() {
 	req := task.Request{
@@ -57,6 +58,14 @@ func main() {
 				strings.TrimPrefix(env, buildkitSecretPrefix), "=", 2)
 
 			req.Config.BuildkitSecrets[seg[0]] = seg[1]
+		}
+
+		if strings.HasPrefix(env, buildkitSecretTextPrefix) {
+			seg := strings.SplitN(
+				strings.TrimPrefix(env, buildkitSecretTextPrefix), "=", 2)
+
+			err := task.StoreSecret(&req, seg[0], seg[1])
+			failIf("store secret provided as text", err)
 		}
 	}
 
