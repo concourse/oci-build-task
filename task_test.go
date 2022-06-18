@@ -15,6 +15,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/registry"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/google/go-containerregistry/pkg/v1/layout"
 	"github.com/google/go-containerregistry/pkg/v1/random"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
@@ -592,6 +593,36 @@ func (s *TaskSuite) TestImagePlatform() {
 
 	s.Equal("linux", configFile.OS)
 	s.Equal("arm64", configFile.Architecture)
+}
+
+func (s *TaskSuite) TestOciImage() {
+	s.req.Config.ContextDir = "testdata/multi-arch"
+	s.req.Config.ImagePlatform = "linux/arm64,linux/amd64"
+	s.req.Config.OutputOCI = true
+
+	_, err := s.build()
+	s.NoError(err)
+
+	l, err := layout.ImageIndexFromPath(s.imagePath("image"))
+	s.NoError(err)
+
+	im, err := l.IndexManifest()
+	s.NoError(err)
+
+	desc := im.Manifests[0]
+	ii, err := l.ImageIndex(desc.Digest)
+	s.NoError(err)
+
+	images, err := ii.IndexManifest()
+	s.NoError(err)
+
+	expectedArch := []string{"arm64", "amd64"}
+	var actualArch []string
+	for _, manifest := range images.Manifests {
+		actualArch = append(actualArch, string(manifest.Platform.Architecture))
+	}
+
+	s.True(reflect.DeepEqual(expectedArch, actualArch))
 }
 
 func (s *TaskSuite) build() (task.Response, error) {

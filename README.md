@@ -140,6 +140,11 @@ _(As a convention in the list below, all task parameters are specified with a
   format (`rootfs/`, `metadata.json`) for use with the [`image` task step
   option](https://concourse-ci.org/jobs.html#schema.step.task-step.image).
 
+* `$OUTPUT_OCI` (default `false`): outputs an OCI compliant image, allowing
+  for multi-arch image builds when setting IMAGE_PLATFORM to [multiple platforms]
+  (https://docs.docker.com/desktop/extensions-sdk/extensions/multi-arch/). The
+  image output format will be a directory when this flag is set to true.
+
 * `$BUILDKIT_ADD_HOSTS` (default empty): extra host definitions for `buildkit`
   to properly resolve custom hostnames. The value is as comma-separated
   (`,`) list of key-value pairs (using syntax `hostname=ip-address`), each

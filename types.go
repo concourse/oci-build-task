@@ -69,6 +69,8 @@ type Config struct {
 	// Theoretically this would go away if/when we standardize on OCI.
 	UnpackRootfs bool `json:"unpack_rootfs" envconfig:"optional"`
 
+	OutputOCI bool `json:"output_oci" envconfig:"optional"`
+
 	// Images to pre-load in order to avoid fetching at build time. Mapping from
 	// build arg name to OCI image tarball path.
 	//
