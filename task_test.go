@@ -594,6 +594,36 @@ func (s *TaskSuite) TestImagePlatform() {
 	s.Equal("arm64", configFile.Architecture)
 }
 
+func (s *TaskSuite) TestRegistryCache() {
+	reg := httptest.NewServer(registry.New())
+	defer reg.Close()
+
+	regURL, err := url.Parse(reg.URL)
+	s.NoError(err)
+
+	cacheRef, err := name.NewTag(fmt.Sprintf("%s/org/image:cache-tag", regURL.Host))
+	s.NoError(err)
+
+	s.req.Config.ContextDir = "testdata/registry-cache"
+	s.req.Config.RegistryCache = cacheRef.String()
+
+	// Build without cache
+	_, err = s.build()
+	s.NoError(err)
+
+	// Check image got exported to file
+	_, err = tarball.ImageFromPath(s.imagePath("image.tar"), nil)
+	s.NoError(err)
+
+	// Check cache tag has been uploaded
+	cacheTags, err := remote.List(cacheRef.Repository)
+	s.NoError(err)
+	s.Contains(cacheTags, "cache-tag")
+
+	// Build with cache, idk how to explicitly test that cache has been used.
+	_, err = s.build()
+}
+
 func (s *TaskSuite) build() (task.Response, error) {
 	return task.Build(s.buildkitd, s.outputsDir, s.req)
 }
