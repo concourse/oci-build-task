@@ -92,10 +92,10 @@ func (s *TaskSuite) TestDigestFile() {
 	image, err := tarball.ImageFromPath(s.imagePath("image.tar"), nil)
 	s.NoError(err)
 
-	manifest, err := image.Manifest()
+	actualDigest, err := image.Digest()
 	s.NoError(err)
 
-	s.Equal(string(digest), manifest.Config.Digest.String())
+	s.Equal(string(digest), actualDigest.String())
 }
 
 func (s *TaskSuite) TestDockerfilePath() {
@@ -522,17 +522,17 @@ func (s *TaskSuite) TestMultiTargetDigest() {
 	s.NoError(err)
 	digest, err := ioutil.ReadFile(s.outputPath("additional-target", "digest"))
 	s.NoError(err)
-	additionalManifest, err := additionalImage.Manifest()
+	additionalDigest, err := additionalImage.Digest()
 	s.NoError(err)
-	s.Equal(string(digest), additionalManifest.Config.Digest.String())
+	s.Equal(string(digest), additionalDigest.String())
 
 	finalImage, err := tarball.ImageFromPath(s.imagePath("image.tar"), nil)
 	s.NoError(err)
 	digest, err = ioutil.ReadFile(s.outputPath("image", "digest"))
 	s.NoError(err)
-	finalManifest, err := finalImage.Manifest()
+	finalDigest, err := finalImage.Digest()
 	s.NoError(err)
-	s.Equal(string(digest), finalManifest.Config.Digest.String())
+	s.Equal(string(digest), finalDigest.String())
 }
 
 func (s *TaskSuite) TestMultiTargetUnpack() {

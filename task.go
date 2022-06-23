@@ -235,12 +235,12 @@ func Build(buildkitd *Buildkitd, outputsDir string, req Request) (Response, erro
 func writeDigest(dest string, image v1.Image) error {
 	digestPath := filepath.Join(dest, "digest")
 
-	manifest, err := image.Manifest()
+	digest, err := image.Digest()
 	if err != nil {
 		return errors.Wrap(err, "get image digest")
 	}
 
-	err = ioutil.WriteFile(digestPath, []byte(manifest.Config.Digest.String()), 0644)
+	err = ioutil.WriteFile(digestPath, []byte(digest.String()), 0644)
 	if err != nil {
 		return errors.Wrap(err, "write digest file")
 	}
