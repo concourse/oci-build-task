@@ -6,8 +6,8 @@ type BuildkitdConfig struct {
 
 type RegistryConfig struct {
 	Mirrors      []string     `toml:"mirrors"`
-	PlainHTTP    *bool        `toml:"http"`
-	Insecure     *bool        `toml:"insecure"`
+	PlainHTTP    bool         `toml:"http"`
+	Insecure     bool         `toml:"insecure"`
 	RootCAs      []string     `toml:"ca"`
 	KeyPairs     []TLSKeyPair `toml:"keypair"`
 	TLSConfigDir []string     `toml:"tlsconfigdir"`

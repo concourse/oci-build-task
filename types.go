@@ -80,7 +80,8 @@ type Config struct {
 
 	ImagePlatform string `json:"image_platform" envconfig:"optional"`
 
-	RegistryCache string `json:"registry_cache" envconfig:"optional"`
+	RegistryCache      string   `json:"registry_cache" envconfig:"optional"`
+	InsecureRegistries []string `json:"insecure_registries" envconfig:"optional"`
 }
 
 // ImageMetadata is the schema written to manifest.json when producing the

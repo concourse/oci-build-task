@@ -148,15 +148,23 @@ func (buildkitd *Buildkitd) Cleanup() error {
 func generateConfig(req Request, configPath string) error {
 	var config BuildkitdConfig
 
+	var registryConfigs map[string]RegistryConfig
+	registryConfigs = make(map[string]RegistryConfig)
+
 	if len(req.Config.RegistryMirrors) > 0 {
-		var registryConfigs map[string]RegistryConfig
-		registryConfigs = make(map[string]RegistryConfig)
 		registryConfigs["docker.io"] = RegistryConfig{
 			Mirrors: req.Config.RegistryMirrors,
 		}
-
-		config.Registries = registryConfigs
 	}
+
+	for _, r := range req.Config.InsecureRegistries {
+		registryConfigs[r] = RegistryConfig{
+			Insecure:  true,
+			PlainHTTP: true,
+		}
+	}
+
+	config.Registries = registryConfigs
 
 	err := os.MkdirAll(filepath.Dir(configPath), 0700)
 	if err != nil {
