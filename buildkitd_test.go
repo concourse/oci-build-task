@@ -58,16 +58,17 @@ func (s *BuildkitdSuite) TestGenerateConfig() {
 	var err error
 
 	s.req.Config.RegistryMirrors = []string{"hub.docker.io"}
+	s.req.Config.InsecureRegistries = []string{"my-registry:5000"}
 
 	s.buildkitd, err = task.SpawnBuildkitd(s.req, &task.BuildkitdOpts{
-		ConfigPath: s.configPath("mirrors.toml"),
+		ConfigPath: s.configPath("cfg.toml"),
 	})
 	s.NoError(err)
 
-	configContent, err := ioutil.ReadFile(s.configPath("mirrors.toml"))
+	configContent, err := ioutil.ReadFile(s.configPath("cfg.toml"))
 	s.NoError(err)
 
-	expectedContent, err := ioutil.ReadFile("testdata/buildkitd-config/mirrors.toml")
+	expectedContent, err := ioutil.ReadFile("testdata/buildkitd-config/cfg.toml")
 	s.NoError(err)
 
 	s.Equal(expectedContent, configContent)

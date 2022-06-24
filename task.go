@@ -100,7 +100,10 @@ func Build(buildkitd *Buildkitd, outputsDir string, req Request) (Response, erro
 		}
 	}
 
-	if _, err := os.Stat(cacheDir); err == nil {
+	if cfg.RegistryCache != "" {
+		buildctlArgs = append(buildctlArgs,
+			"--export-cache", "type=registry,mode=max,ref="+cfg.RegistryCache)
+	} else if _, err := os.Stat(cacheDir); err == nil {
 		buildctlArgs = append(buildctlArgs,
 			"--export-cache", "type=local,mode=max,dest="+cacheDir,
 		)
@@ -188,7 +191,10 @@ func Build(buildkitd *Buildkitd, outputsDir string, req Request) (Response, erro
 			logrus.Infof("building target '%s'", targetName)
 		}
 
-		if _, err := os.Stat(filepath.Join(cacheDir, "index.json")); err == nil {
+		if cfg.RegistryCache != "" {
+			args = append(args,
+				"--import-cache", "type=registry,ref="+cfg.RegistryCache)
+		} else if _, err := os.Stat(filepath.Join(cacheDir, "index.json")); err == nil {
 			args = append(args,
 				"--import-cache", "type=local,src="+cacheDir,
 			)
@@ -229,12 +235,12 @@ func Build(buildkitd *Buildkitd, outputsDir string, req Request) (Response, erro
 func writeDigest(dest string, image v1.Image) error {
 	digestPath := filepath.Join(dest, "digest")
 
-	manifest, err := image.Manifest()
+	digest, err := image.Digest()
 	if err != nil {
 		return errors.Wrap(err, "get image digest")
 	}
 
-	err = ioutil.WriteFile(digestPath, []byte(manifest.Config.Digest.String()), 0644)
+	err = ioutil.WriteFile(digestPath, []byte(digest.String()), 0644)
 	if err != nil {
 		return errors.Wrap(err, "write digest file")
 	}

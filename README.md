@@ -62,12 +62,12 @@ _(As a convention in the list below, all task parameters are specified with a
   to build.
 
 * `$BUILDKIT_SSH` your ssh key location that is mounted in your `Dockerfile`. This is
-  generally used for pulling dependencies from private repositories. 
+  generally used for pulling dependencies from private repositories.
 
   For Example. In your `Dockerfile`, you can mount a key as
   ```
   RUN --mount=type=ssh,id=github_ssh_key pip install -U -r ./hats/requirements-test.txt
-  ``` 
+  ```
 
   Then in your Concourse YAML configuration:
   ```
@@ -257,12 +257,27 @@ set `image: image`.)
 
 ### `caches`
 
-Caching can be enabled by caching the `cache` path on the task:
+Task caching can be enabled by caching the `cache` path on the task:
 
 ```yaml
 caches:
 - path: cache
 ```
+
+Alternatively, one may configure caching via docker registry:
+
+```yaml
+params:
+  REGISTRY_CACHE: registry.example.com/my-org/my-image:cache
+```
+
+#### Which one to use?
+
+Registry cache allows the caches to be shared by all concourse workers, but it
+enables side-effects such as pulling and pushing of cache images to the
+docker registry, which may require [authentication](https://github.com/concourse/oci-build-task/issues/14#issuecomment-596731775).
+
+Task cache is easy to set up, but it is not shared by concourse workers.
 
 ### `run`
 
