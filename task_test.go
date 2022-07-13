@@ -608,6 +608,7 @@ func (s *TaskSuite) TestOciImage() {
 
 	im, err := l.IndexManifest()
 	s.NoError(err)
+	fmt.Printf("Contents of im: %+v \n", im)
 
 	desc := im.Manifests[0]
 	ii, err := l.ImageIndex(desc.Digest)
@@ -615,6 +616,7 @@ func (s *TaskSuite) TestOciImage() {
 
 	images, err := ii.IndexManifest()
 	s.NoError(err)
+	fmt.Printf("Contents of ii: %+v \n", ii)
 
 	expectedArch := []string{"arm64", "amd64"}
 	var actualArch []string
