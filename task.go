@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	v1 "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/google/go-containerregistry/pkg/v1/layout"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -116,6 +117,11 @@ func Build(buildkitd *Buildkitd, outputsDir string, req Request) (Response, erro
 	var targets []string
 	var imagePaths []string
 
+	outputType := "docker"
+	if cfg.OutputOCI {
+		outputType = "oci"
+	}
+
 	for _, t := range cfg.AdditionalTargets {
 		// prevent re-use of the buildctlArgs slice as it is appended to later on,
 		// and that would clobber args for all targets if the slice was re-used
@@ -131,7 +137,7 @@ func Build(buildkitd *Buildkitd, outputsDir string, req Request) (Response, erro
 			imagePaths = append(imagePaths, imagePath)
 
 			targetArgs = append(targetArgs,
-				"--output", "type=docker,dest="+imagePath,
+				"--output", "type="+outputType+",dest="+imagePath,
 			)
 		}
 
@@ -145,7 +151,7 @@ func Build(buildkitd *Buildkitd, outputsDir string, req Request) (Response, erro
 		imagePaths = append(imagePaths, imagePath)
 
 		buildctlArgs = append(buildctlArgs,
-			"--output", "type=docker,dest="+imagePath,
+			"--output", "type="+outputType+",dest="+imagePath,
 		)
 	}
 
@@ -202,39 +208,95 @@ func Build(buildkitd *Buildkitd, outputsDir string, req Request) (Response, erro
 		}
 	}
 
-	for _, imagePath := range imagePaths {
-		image, err := tarball.ImageFromPath(imagePath, nil)
-		if err != nil {
-			return Response{}, errors.Wrap(err, "open oci image")
-		}
-
-		outputDir := filepath.Dir(imagePath)
-
-		err = writeDigest(outputDir, image)
+	if req.Config.OutputOCI {
+		err = loadOciImages(imagePaths, req)
 		if err != nil {
 			return Response{}, err
 		}
-
-		if req.Config.UnpackRootfs {
-			err = unpackRootfs(outputDir, image, cfg)
-			if err != nil {
-				return Response{}, errors.Wrap(err, "unpack rootfs")
-			}
+	} else {
+		err = loadImages(imagePaths, req)
+		if err != nil {
+			return Response{}, err
 		}
 	}
 
 	return res, nil
 }
 
-func writeDigest(dest string, image v1.Image) error {
-	digestPath := filepath.Join(dest, "digest")
+func loadImages(imagePaths []string, req Request) error {
+	for _, imagePath := range imagePaths {
+		image, err := tarball.ImageFromPath(imagePath, nil)
+		if err != nil {
+			return errors.Wrap(err, "open oci image")
+		}
 
-	manifest, err := image.Manifest()
-	if err != nil {
-		return errors.Wrap(err, "get image digest")
+		outputDir := filepath.Dir(imagePath)
+
+		m, err := image.Manifest()
+		if err != nil {
+			return errors.Wrap(err, "get image manifest")
+		}
+
+		err = writeDigest(outputDir, m.Config.Digest)
+		if err != nil {
+			return err
+		}
+
+		if req.Config.UnpackRootfs {
+			err = unpackRootfs(outputDir, image, req.Config)
+			if err != nil {
+				return errors.Wrap(err, "unpack rootfs")
+			}
+		}
+	}
+	return nil
+}
+
+func loadOciImages(imagePaths []string, req Request) error {
+	for _, imagePath := range imagePaths {
+		_, err := os.Stat(imagePath)
+		if err != nil {
+			return errors.Wrapf(err, "image path %s not valid", imagePath)
+		}
+
+		// go-containerregistry does not currently have support for loading a OCI formated
+		// image from a tarball, so we decompress it before doing anything.
+		targetDir := filepath.Dir(imagePath)
+		imageDir := filepath.Join(targetDir, "image")
+		logrus.Infof("decompressing OCI image tar to: %s", imageDir)
+		err = os.MkdirAll(imageDir, 0700)
+		if err != nil {
+			return errors.Wrapf(err, "unable to create image dir %s", imageDir)
+		}
+		run(os.Stdout, "tar", "-xvf", imagePath, "-C", imageDir)
+
+		l, err := layout.ImageIndexFromPath(imageDir)
+		if err != nil {
+			return errors.Wrapf(err, "failed to load %s as OCI layout", imagePath)
+		}
+
+		m, err := l.IndexManifest()
+		if err != nil {
+			return errors.Wrap(err, "error getting index manifest")
+		}
+
+		manifest := m.Manifests[0]
+
+		outputDir := filepath.Dir(imagePath)
+
+		err = writeDigest(outputDir, manifest.Digest)
+		if err != nil {
+			return err
+		}
 	}
 
-	err = ioutil.WriteFile(digestPath, []byte(manifest.Config.Digest.String()), 0644)
+	return nil
+}
+
+func writeDigest(dest string, digest v1.Hash) error {
+	digestPath := filepath.Join(dest, "digest")
+
+	err := ioutil.WriteFile(digestPath, []byte(digest.String()), 0644)
 	if err != nil {
 		return errors.Wrap(err, "write digest file")
 	}
