@@ -10,7 +10,7 @@ FROM concourse/golang-builder AS builder
   RUN go build -o /assets/task ./cmd/task
   RUN go build -o /assets/build ./cmd/build
 
-FROM moby/buildkit:v0.10.3 AS task
+FROM moby/buildkit:v0.10.4 AS task
   COPY --from=builder /assets/task /usr/bin/
   COPY --from=builder /assets/build /usr/bin/
   COPY bin/setup-cgroups /usr/bin/
