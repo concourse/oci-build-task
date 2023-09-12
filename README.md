@@ -276,6 +276,8 @@ caches:
 - path: cache
 ```
 
+NOTE: the contents of `--mount=type=cache` directories are not cached, see https://github.com/concourse/oci-build-task/issues/87
+
 ### `run`
 
 Your task should run the `build` executable:
