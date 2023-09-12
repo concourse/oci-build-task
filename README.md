@@ -114,6 +114,13 @@ _(As a convention in the list below, all task parameters are specified with a
   name. For example, `IMAGE_ARG_base_image=ubuntu/image.tar` will set
   `base_image` to a local image reference for using `ubuntu/image.tar`.
 
+  This must be accepted as an argument for use; for example:
+
+  ```
+  ARG base_image
+  FROM ${base_image}
+  ```
+
 * `$IMAGE_PLATFORM`: Specify the target platform to build the image for. For
   example `IMAGE_PLATFORM=linux/arm64` will build the image for the Linux OS
   and `arm64` architecture. By default, images will be built for the current
