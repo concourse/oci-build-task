@@ -74,7 +74,7 @@ func SpawnBuildkitd(req Request, opts *BuildkitdOpts) (*Buildkitd, error) {
 	if os.Getuid() == 0 {
 		cmd = exec.Command("buildkitd", buildkitdFlags...)
 	} else {
-		cmd = exec.Command("rootlesskit", append([]string{"buildkitd"}, buildkitdFlags...)...)
+		cmd = exec.Command("rootlesskit", append([]string{"buildkitd", "--rootless"}, buildkitdFlags...)...)
 	}
 
 	// kill buildkitd on exit
