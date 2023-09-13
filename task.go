@@ -161,6 +161,11 @@ func Build(buildkitd *Buildkitd, outputsDir string, req Request) (Response, erro
 		)
 	}
 
+	if cfg.Push != "" {
+		buildctlArgs = append(buildctlArgs,
+			"--output", fmt.Sprintf("type=image,name=%s,push=true", cfg.Push))
+	}
+
 	if cfg.AddHosts != "" {
 		buildctlArgs = append(buildctlArgs,
 			"--opt", "add-hosts="+cfg.AddHosts,

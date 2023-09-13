@@ -53,6 +53,7 @@ type Config struct {
 	Target            string   `json:"target"      envconfig:"optional"`
 	TargetFile        string   `json:"target_file" envconfig:"optional"`
 	AdditionalTargets []string `json:"additional_targets" envconfig:"ADDITIONAL_TARGETS,optional"`
+	Push              string   `json:"push" envconfig:"optional"`
 
 	BuildArgs     []string `json:"build_args"      envconfig:"optional"`
 	BuildArgsFile string   `json:"build_args_file" envconfig:"optional"`
