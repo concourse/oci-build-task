@@ -3,7 +3,6 @@ package task_test
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http/httptest"
 	"net/url"
 	"os"
@@ -46,7 +45,7 @@ func (s *TaskSuite) TearDownSuite() {
 
 func (s *TaskSuite) SetupTest() {
 	var err error
-	s.outputsDir, err = ioutil.TempDir("", "oci-build-task-test")
+	s.outputsDir, err = os.MkdirTemp("", "oci-build-task-test")
 	s.NoError(err)
 
 	err = os.Mkdir(s.imagePath(), 0755)
@@ -88,7 +87,7 @@ func (s *TaskSuite) TestDigestFile() {
 	_, err := s.build()
 	s.NoError(err)
 
-	digest, err := ioutil.ReadFile(s.imagePath("digest"))
+	digest, err := os.ReadFile(s.imagePath("digest"))
 	s.NoError(err)
 
 	image, err := tarball.ImageFromPath(s.imagePath("image.tar"), nil)
@@ -240,10 +239,10 @@ func (s *TaskSuite) TestUnpackRootfs() {
 	meta, err := s.imageMetadata("image")
 	s.NoError(err)
 
-	rootfsContent, err := ioutil.ReadFile(s.imagePath("rootfs", "Dockerfile"))
+	rootfsContent, err := os.ReadFile(s.imagePath("rootfs", "Dockerfile"))
 	s.NoError(err)
 
-	expectedContent, err := ioutil.ReadFile("testdata/unpack-rootfs/Dockerfile")
+	expectedContent, err := os.ReadFile("testdata/unpack-rootfs/Dockerfile")
 	s.NoError(err)
 
 	s.Equal(rootfsContent, expectedContent)
@@ -287,7 +286,7 @@ func (s *TaskSuite) TestRegistryMirrors() {
 	s.req.Config.ContextDir = "testdata/mirror"
 	s.req.Config.RegistryMirrors = []string{mirrorURL.Host}
 
-	rootDir, err := ioutil.TempDir("", "mirrored-buildkitd")
+	rootDir, err := os.MkdirTemp("", "mirrored-buildkitd")
 	s.NoError(err)
 
 	defer os.RemoveAll(rootDir)
@@ -324,7 +323,7 @@ func (s *TaskSuite) TestRegistryMirrors() {
 }
 
 func (s *TaskSuite) TestImageArgs() {
-	imagesDir, err := ioutil.TempDir("", "preload-images")
+	imagesDir, err := os.MkdirTemp("", "preload-images")
 	s.NoError(err)
 
 	defer os.RemoveAll(imagesDir)
@@ -382,7 +381,7 @@ func (s *TaskSuite) TestImageArgs() {
 }
 
 func (s *TaskSuite) TestImageArgsWithUppercaseName() {
-	imagesDir, err := ioutil.TempDir("", "preload-images")
+	imagesDir, err := os.MkdirTemp("", "preload-images")
 	s.NoError(err)
 
 	defer os.RemoveAll(imagesDir)
@@ -405,10 +404,10 @@ func (s *TaskSuite) TestImageArgsWithUppercaseName() {
 	meta, err := s.imageMetadata("image")
 	s.NoError(err)
 
-	rootfsContent, err := ioutil.ReadFile(s.imagePath("rootfs", "Dockerfile.second"))
+	rootfsContent, err := os.ReadFile(s.imagePath("rootfs", "Dockerfile.second"))
 	s.NoError(err)
 
-	expectedContent, err := ioutil.ReadFile("testdata/image-args/Dockerfile.uppercase")
+	expectedContent, err := os.ReadFile("testdata/image-args/Dockerfile.uppercase")
 	s.NoError(err)
 
 	s.Equal(rootfsContent, expectedContent)
@@ -418,7 +417,7 @@ func (s *TaskSuite) TestImageArgsWithUppercaseName() {
 }
 
 func (s *TaskSuite) TestImageArgsUnpack() {
-	imagesDir, err := ioutil.TempDir("", "preload-images")
+	imagesDir, err := os.MkdirTemp("", "preload-images")
 	s.NoError(err)
 
 	defer os.RemoveAll(imagesDir)
@@ -442,10 +441,10 @@ func (s *TaskSuite) TestImageArgsUnpack() {
 	meta, err := s.imageMetadata("image")
 	s.NoError(err)
 
-	rootfsContent, err := ioutil.ReadFile(s.imagePath("rootfs", "Dockerfile.second"))
+	rootfsContent, err := os.ReadFile(s.imagePath("rootfs", "Dockerfile.second"))
 	s.NoError(err)
 
-	expectedContent, err := ioutil.ReadFile("testdata/image-args/Dockerfile")
+	expectedContent, err := os.ReadFile("testdata/image-args/Dockerfile")
 	s.NoError(err)
 
 	s.Equal(rootfsContent, expectedContent)
@@ -517,7 +516,7 @@ func (s *TaskSuite) TestMultiTargetDigest() {
 
 	additionalImage, err := tarball.ImageFromPath(s.outputPath("additional-target", "image.tar"), nil)
 	s.NoError(err)
-	digest, err := ioutil.ReadFile(s.outputPath("additional-target", "digest"))
+	digest, err := os.ReadFile(s.outputPath("additional-target", "digest"))
 	s.NoError(err)
 	additionalManifest, err := additionalImage.Manifest()
 	s.NoError(err)
@@ -525,7 +524,7 @@ func (s *TaskSuite) TestMultiTargetDigest() {
 
 	finalImage, err := tarball.ImageFromPath(s.imagePath("image.tar"), nil)
 	s.NoError(err)
-	digest, err = ioutil.ReadFile(s.outputPath("image", "digest"))
+	digest, err = os.ReadFile(s.outputPath("image", "digest"))
 	s.NoError(err)
 	finalManifest, err := finalImage.Manifest()
 	s.NoError(err)
@@ -543,9 +542,9 @@ func (s *TaskSuite) TestMultiTargetUnpack() {
 	_, err = s.build()
 	s.NoError(err)
 
-	rootfsContent, err := ioutil.ReadFile(s.outputPath("additional-target", "rootfs", "Dockerfile.banana"))
+	rootfsContent, err := os.ReadFile(s.outputPath("additional-target", "rootfs", "Dockerfile.banana"))
 	s.NoError(err)
-	expectedContent, err := ioutil.ReadFile("testdata/multi-target/Dockerfile")
+	expectedContent, err := os.ReadFile("testdata/multi-target/Dockerfile")
 	s.NoError(err)
 	s.Equal(rootfsContent, expectedContent)
 
@@ -554,9 +553,9 @@ func (s *TaskSuite) TestMultiTargetUnpack() {
 	s.Equal(meta.User, "banana")
 	s.Equal(meta.Env, []string{"PATH=/darkness", "BA=nana"})
 
-	rootfsContent, err = ioutil.ReadFile(s.outputPath("image", "rootfs", "Dockerfile.orange"))
+	rootfsContent, err = os.ReadFile(s.outputPath("image", "rootfs", "Dockerfile.orange"))
 	s.NoError(err)
-	expectedContent, err = ioutil.ReadFile("testdata/multi-target/Dockerfile")
+	expectedContent, err = os.ReadFile("testdata/multi-target/Dockerfile")
 	s.NoError(err)
 	s.Equal(rootfsContent, expectedContent)
 
@@ -634,7 +633,7 @@ func (s *TaskSuite) outputPath(path ...string) string {
 }
 
 func (s *TaskSuite) imageMetadata(output string) (task.ImageMetadata, error) {
-	metadataPayload, err := ioutil.ReadFile(s.outputPath(output, "metadata.json"))
+	metadataPayload, err := os.ReadFile(s.outputPath(output, "metadata.json"))
 	if err != nil {
 		return task.ImageMetadata{}, err
 	}

@@ -3,7 +3,6 @@ package task
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/url"
 	"os"
 	"os/exec"
@@ -101,7 +100,7 @@ func SpawnBuildkitd(req Request, opts *BuildkitdOpts) (*Buildkitd, error) {
 	}
 
 	for {
-		err := buildctl(addr, ioutil.Discard, "debug", "workers")
+		err := buildctl(addr, io.Discard, "debug", "workers")
 		if err == nil {
 			break
 		}
@@ -149,8 +148,7 @@ func generateConfig(req Request, configPath string) error {
 	var config BuildkitdConfig
 
 	if len(req.Config.RegistryMirrors) > 0 {
-		var registryConfigs map[string]RegistryConfig
-		registryConfigs = make(map[string]RegistryConfig)
+		var registryConfigs = make(map[string]RegistryConfig)
 		registryConfigs["docker.io"] = RegistryConfig{
 			Mirrors: req.Config.RegistryMirrors,
 		}

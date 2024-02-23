@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -25,7 +24,7 @@ func StoreSecret(req *Request, name, value string) error {
 	if err != nil {
 		return fmt.Errorf("unable to create secret directory: %w", err)
 	}
-	err = ioutil.WriteFile(secretFile, []byte(value), 0600)
+	err = os.WriteFile(secretFile, []byte(value), 0600)
 	if err != nil {
 		return fmt.Errorf("unable to write secret to file: %w", err)
 	}
@@ -296,7 +295,7 @@ func loadOciImages(imagePaths []string, req Request) error {
 func writeDigest(dest string, digest v1.Hash) error {
 	digestPath := filepath.Join(dest, "digest")
 
-	err := ioutil.WriteFile(digestPath, []byte(digest.String()), 0644)
+	err := os.WriteFile(digestPath, []byte(digest.String()), 0644)
 	if err != nil {
 		return errors.Wrap(err, "write digest file")
 	}
@@ -360,7 +359,7 @@ func sanitize(cfg *Config) error {
 	}
 
 	if cfg.TargetFile != "" {
-		target, err := ioutil.ReadFile(cfg.TargetFile)
+		target, err := os.ReadFile(cfg.TargetFile)
 		if err != nil {
 			return errors.Wrap(err, "read target file")
 		}
@@ -369,7 +368,7 @@ func sanitize(cfg *Config) error {
 	}
 
 	if cfg.BuildArgsFile != "" {
-		buildArgs, err := ioutil.ReadFile(cfg.BuildArgsFile)
+		buildArgs, err := os.ReadFile(cfg.BuildArgsFile)
 		if err != nil {
 			return errors.Wrap(err, "read build args file")
 		}
@@ -385,7 +384,7 @@ func sanitize(cfg *Config) error {
 	}
 
 	if cfg.LabelsFile != "" {
-		Labels, err := ioutil.ReadFile(cfg.LabelsFile)
+		Labels, err := os.ReadFile(cfg.LabelsFile)
 		if err != nil {
 			return errors.Wrap(err, "read labels file")
 		}
