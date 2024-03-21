@@ -49,6 +49,9 @@ func Build(buildkitd *Buildkitd, outputsDir string, req Request) (Response, erro
 
 	cacheDir := filepath.Join(outputsDir, "cache")
 
+	cacheInDir := filepath.Join(outputsDir, "cache-in")
+	cacheOutDir := filepath.Join(outputsDir, "cache-out")
+
 	res := Response{
 		Outputs: []string{"image", "cache"},
 	}
@@ -104,6 +107,10 @@ func Build(buildkitd *Buildkitd, outputsDir string, req Request) (Response, erro
 	if _, err := os.Stat(cacheDir); err == nil {
 		buildctlArgs = append(buildctlArgs,
 			"--export-cache", "type=local,mode=max,dest="+cacheDir,
+		)
+	} else if _, err := os.Stat(cacheInDir); err == nil {
+		buildctlArgs = append(buildctlArgs,
+			"--export-cache", "type=local,mode=max,dest="+cacheInDir,
 		)
 	}
 
@@ -197,6 +204,10 @@ func Build(buildkitd *Buildkitd, outputsDir string, req Request) (Response, erro
 		if _, err := os.Stat(filepath.Join(cacheDir, "index.json")); err == nil {
 			args = append(args,
 				"--import-cache", "type=local,src="+cacheDir,
+			)
+		} else if _, err := os.Stat(filepath.Join(cacheOutDir, "index.json")); err == nil {
+			args = append(args,
+				"--import-cache", "type=local,src="+cacheOutDir,
 			)
 		}
 
