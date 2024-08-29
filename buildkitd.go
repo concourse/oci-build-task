@@ -173,6 +173,13 @@ func generateConfig(req Request, configPath string) error {
 		return err
 	}
 
+	if len(req.Config.BuildkitExtraConfig) > 0 {
+		_, err = f.WriteString(req.Config.BuildkitExtraConfig)
+		if err != nil {
+			return err
+		}
+	}
+
 	return f.Close()
 }
 

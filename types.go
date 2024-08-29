@@ -64,6 +64,8 @@ type Config struct {
 
 	BuildkitSecrets map[string]string `json:"buildkit_secrets" envconfig:"optional"`
 
+	BuildkitExtraConfig string `json:"buildkit_extra_config" envconfig:"BUILDKIT_EXTRA_CONFIG,optional"`
+
 	// Unpack the OCI image into Concourse's rootfs/ + metadata.json image scheme.
 	//
 	// Theoretically this would go away if/when we standardize on OCI.
