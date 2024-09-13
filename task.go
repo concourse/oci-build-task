@@ -3,6 +3,7 @@ package task
 import (
 	"encoding/json"
 	"fmt"
+	"gopkg.in/yaml.v3"
 	"io"
 	"os"
 	"os/exec"
@@ -373,13 +374,24 @@ func sanitize(cfg *Config) error {
 			return errors.Wrap(err, "read build args file")
 		}
 
-		for _, arg := range strings.Split(string(buildArgs), "\n") {
-			if len(arg) == 0 {
-				// skip blank lines
-				continue
+		if strings.HasSuffix(cfg.BuildArgsFile, ".yml") || strings.HasSuffix(cfg.BuildArgsFile, ".yaml") {
+			var buildArgsData map[string]string
+			err = yaml.Unmarshal(buildArgs, &buildArgsData)
+			if err != nil {
+				return errors.Wrap(err, "read build args yaml file")
 			}
+			for key, arg := range buildArgsData {
+				cfg.BuildArgs = append(cfg.BuildArgs, key + "=" + arg)
+			}
+		} else {
+			for _, arg := range strings.Split(string(buildArgs), "\n") {
+				if len(arg) == 0 {
+					// skip blank lines
+					continue
+				}
 
-			cfg.BuildArgs = append(cfg.BuildArgs, arg)
+				cfg.BuildArgs = append(cfg.BuildArgs, arg)
+			}
 		}
 	}
 
