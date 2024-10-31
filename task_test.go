@@ -16,6 +16,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/registry"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/layout"
+	"github.com/google/go-containerregistry/pkg/v1/mutate"
 	"github.com/google/go-containerregistry/pkg/v1/random"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
@@ -272,8 +273,7 @@ func (s *TaskSuite) TestRegistryMirrors() {
 	mirror := httptest.NewServer(registry.New())
 	defer mirror.Close()
 
-	image, err := random.Image(1024, 2)
-	s.NoError(err)
+	image := s.randomImage(1024, 2, "linux", "amd64")
 
 	mirrorURL, err := url.Parse(mirror.URL)
 	s.NoError(err)
@@ -329,14 +329,12 @@ func (s *TaskSuite) TestImageArgs() {
 
 	defer os.RemoveAll(imagesDir)
 
-	firstImage, err := random.Image(1024, 2)
-	s.NoError(err)
+	firstImage := s.randomImage(1024, 2, "linux", "amd64")
 	firstPath := filepath.Join(imagesDir, "first.tar")
 	err = tarball.WriteToFile(firstPath, nil, firstImage)
 	s.NoError(err)
 
-	secondImage, err := random.Image(1024, 2)
-	s.NoError(err)
+	secondImage := s.randomImage(1024, 2, "linux", "amd64")
 	secondPath := filepath.Join(imagesDir, "second.tar")
 	err = tarball.WriteToFile(secondPath, nil, secondImage)
 	s.NoError(err)
@@ -389,8 +387,7 @@ func (s *TaskSuite) TestImageArgsWithUppercaseName() {
 
 	defer os.RemoveAll(imagesDir)
 
-	image, err := random.Image(1024, 2)
-	s.NoError(err)
+	image := s.randomImage(1024, 2, "linux", "amd64")
 	imagePath := filepath.Join(imagesDir, "first.tar")
 	err = tarball.WriteToFile(imagePath, nil, image)
 	s.NoError(err)
@@ -426,8 +423,7 @@ func (s *TaskSuite) TestImageArgsUnpack() {
 
 	defer os.RemoveAll(imagesDir)
 
-	image, err := random.Image(1024, 2)
-	s.NoError(err)
+	image := s.randomImage(1024, 2, "linux", "amd64")
 	imagePath := filepath.Join(imagesDir, "first.tar")
 	err = tarball.WriteToFile(imagePath, nil, image)
 	s.NoError(err)
@@ -650,6 +646,23 @@ func (s *TaskSuite) imageMetadata(output string) (task.ImageMetadata, error) {
 	}
 
 	return meta, nil
+}
+
+func (s *TaskSuite) randomImage(byteSize, layers int64, os, arch string) v1.Image {
+	image, err := random.Image(byteSize, layers)
+	s.NoError(err)
+
+	cf, err := image.ConfigFile()
+	s.NoError(err)
+
+	cf = cf.DeepCopy()
+	cf.OS = os
+	cf.Architecture = arch
+
+	image, err = mutate.ConfigFile(image, cf)
+	s.NoError(err)
+
+	return image
 }
 
 func TestSuite(t *testing.T) {
