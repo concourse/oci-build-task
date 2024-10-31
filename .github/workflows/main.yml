@@ -6,18 +6,18 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v4
       with: {submodules: true}
     - run: scripts/test
 
   build-image:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v4
       with: {submodules: true}
     - run: scripts/build
     - run: scripts/build-image
-    - uses: actions/upload-artifact@v1
+    - uses: actions/upload-artifact@v4
       with:
         name: image
         path: image
@@ -26,9 +26,11 @@ jobs:
     needs: [build-image]
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v1
-    - uses: actions/download-artifact@v1
-      with: {name: image}
+    - uses: actions/checkout@v4
+    - uses: actions/download-artifact@v4
+      with:
+        name: image
+        path: image
     - uses: docker://concourse/registry-image-resource
       with: {entrypoint: scripts/push-image}
       env:
