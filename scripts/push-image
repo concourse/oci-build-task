@@ -7,19 +7,21 @@ version=""
 
 case $GITHUB_REF in
   refs/heads/*)
-    tag=$(echo $GITHUB_REF | sed 's|refs/heads/||')
+    tag=${GITHUB_REF#refs/heads/}
     ;;
 
   refs/tags/v[0-9]*)
-    version=$(echo $GITHUB_REF | sed 's|refs/tags/v||')
+    version=${GITHUB_REF#refs/tags/v}
     ;;
 
   refs/tags/*)
-    tag=$(echo $GITHUB_REF | sed 's|refs/tags/||')
+    tag=${GITHUB_REF#refs/tags/}
     ;;
 
   refs/pull/[0-9]*/merge)
-    tag=pr$(echo $GITHUB_REF | sed 's|refs/pull/\([0-9]\+\)/merge|\1|')
+    tag=${GITHUB_REF#refs/pull/}
+    tag=${tag%/merge}
+    tag=pr$tag
     ;;
 
   *)
