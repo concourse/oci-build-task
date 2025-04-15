@@ -6,7 +6,6 @@ import (
 	"archive/tar"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -31,7 +30,7 @@ func unpackImage(dest string, img v1.Image, debug bool) error {
 
 	var out io.Writer
 	if debug {
-		out = ioutil.Discard
+		out = io.Discard
 	} else {
 		out = os.Stderr
 	}

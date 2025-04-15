@@ -1,7 +1,6 @@
 package task_test
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -30,7 +29,7 @@ func (s *BuildkitdSuite) TearDownSuite() {
 
 func (s *BuildkitdSuite) SetupTest() {
 	var err error
-	s.outputsDir, err = ioutil.TempDir("", "oci-build-task-test")
+	s.outputsDir, err = os.MkdirTemp("", "oci-build-task-test")
 	s.NoError(err)
 
 	s.req = task.Request{
@@ -64,10 +63,10 @@ func (s *BuildkitdSuite) TestGenerateConfig() {
 	})
 	s.NoError(err)
 
-	configContent, err := ioutil.ReadFile(s.configPath("mirrors.toml"))
+	configContent, err := os.ReadFile(s.configPath("mirrors.toml"))
 	s.NoError(err)
 
-	expectedContent, err := ioutil.ReadFile("testdata/buildkitd-config/mirrors.toml")
+	expectedContent, err := os.ReadFile("testdata/buildkitd-config/mirrors.toml")
 	s.NoError(err)
 
 	s.Equal(expectedContent, configContent)

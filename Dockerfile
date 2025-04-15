@@ -1,4 +1,4 @@
-# syntax = docker/dockerfile:experimental
+# syntax = docker/dockerfile:1.11
 
 FROM concourse/golang-builder AS builder
   WORKDIR /src
@@ -6,11 +6,11 @@ FROM concourse/golang-builder AS builder
   COPY go.sum /src/go.sum
   RUN --mount=type=cache,target=/root/.cache/go-build go get -d ./...
   COPY . /src
-  ENV CGO_ENABLED 0
+  ENV CGO_ENABLED=0
   RUN go build -o /assets/task ./cmd/task
   RUN go build -o /assets/build ./cmd/build
 
-FROM moby/buildkit:v0.11.0 AS task
+FROM moby/buildkit:v0.17.2 AS task
   COPY --from=builder /assets/task /usr/bin/
   COPY --from=builder /assets/build /usr/bin/
   COPY bin/setup-cgroups /usr/bin/

@@ -1,4 +1,4 @@
-# syntax = docker/dockerfile:1.0-experimental
+# syntax = docker/dockerfile:1.11
 FROM alpine
 
 RUN apk add --no-cache openssh-client
