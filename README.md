@@ -80,15 +80,28 @@ _(As a convention in the list below, all task parameters are specified with a
 * `$BUILD_ARG_*`: params prefixed with `BUILD_ARG_` will be provided as build
   args. For example `BUILD_ARG_foo=bar`, will set the `foo` build arg as `bar`.
 
-* `$BUILD_ARGS_FILE` (default empty): path to a file containing build args in
-  the form `foo=bar`, one per line. Empty lines are skipped.
+* `$BUILD_ARGS_FILE` (default empty): path to a file containing build args. By
+    default the task will assume each line is in the form `foo=bar`, one per
+    line. Empty lines are skipped. If the file ends in `yml` or `yaml` it will
+    be parsed as a YAML file. The YAML file can only contain string keys and
+    values.
 
-  Example file contents:
+  Example simple file contents:
 
   ```
-  EMAIL=me@yopmail.com
+  EMAIL=me@example.com
   HOW_MANY_THINGS=1
   DO_THING=false
+  ```
+  Example YAML file contents:
+
+  ```yaml
+  EMAIL: me@example.com
+  HOW_MANY_THINGS: "1"
+  DO_THING: "false"
+  MULTI_LINE_ARG: |
+    thing1
+    thing2
   ```
 
 * `$BUILDKIT_SECRET_*`: files with extra secrets which are made available via

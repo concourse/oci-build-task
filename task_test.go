@@ -152,6 +152,15 @@ func (s *TaskSuite) TestBuildArgsFile() {
 	s.NoError(err)
 }
 
+func (s *TaskSuite) TestBuildArgsYamlFile() {
+	s.req.Config.ContextDir = "testdata/build-args"
+	s.req.Config.BuildArgsFile = "testdata/build-args/build_args_file.yaml"
+
+	// the Dockerfile itself asserts that the arg has been received
+	_, err := s.build()
+	s.NoError(err)
+}
+
 func (s *TaskSuite) TestBuildArgsStaticAndFile() {
 	s.req.Config.ContextDir = "testdata/build-args"
 	s.req.Config.BuildArgs = []string{"some_arg=some_value"}
