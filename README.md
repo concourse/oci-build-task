@@ -170,6 +170,9 @@ _(As a convention in the list below, all task parameters are specified with a
   (`,`) list of key-value pairs (using syntax `hostname=ip-address`), each
   defining an IP address for resolving some custom hostname.
 
+* `$BUILDKIT_EXTRA_CONFIG` (default empty): a string written verbatim to builkit's
+  TOML config file. See [buildkitd.toml](https://docs.docker.com/build/buildkit/toml-configuration/).
+
 > Note: this is the main pain point with reusable tasks - env vars are kind of
 > an awkward way to configure a task. Once the RFC lands these will turn into a
 > JSON structure similar to configuring `params` on a resource, and task params
