@@ -174,6 +174,12 @@ func generateConfig(req Request, configPath string) error {
 	}
 
 	if len(req.Config.BuildkitExtraConfig) > 0 {
+		var tmp interface{}
+		_, err = toml.Decode(req.Config.BuildkitExtraConfig, &tmp)
+		if err != nil {
+			return errors.Wrap(err, "Extra buildkit config must be valid TOML")
+		}
+
 		_, err = f.WriteString(req.Config.BuildkitExtraConfig)
 		if err != nil {
 			return err
