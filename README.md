@@ -62,12 +62,12 @@ _(As a convention in the list below, all task parameters are specified with a
   to build.
 
 * `$BUILDKIT_SSH` your ssh key location that is mounted in your `Dockerfile`. This is
-  generally used for pulling dependencies from private repositories. 
+  generally used for pulling dependencies from private repositories.
 
   For Example. In your `Dockerfile`, you can mount a key as
   ```
   RUN --mount=type=ssh,id=github_ssh_key pip install -U -r ./hats/requirements-test.txt
-  ``` 
+  ```
 
   Then in your Concourse YAML configuration:
   ```
@@ -122,10 +122,11 @@ _(As a convention in the list below, all task parameters are specified with a
   `(( mysecret ))` expands to in `/run/secrets/mysecret`.
 
 * `$IMAGE_ARG_*`: params prefixed with `IMAGE_ARG_*` point to image tarballs
-  (i.e. `docker save` format) to preload so that they do not have to be fetched
-  during the build. An image reference will be provided as the given build arg
-  name. For example, `IMAGE_ARG_base_image=ubuntu/image.tar` will set
-  `base_image` to a local image reference for using `ubuntu/image.tar`.
+  (i.e. `docker save` format) or path to images in OCI layout format, to preload
+  so that they do not have to be fetched during the build. An image reference
+  will be provided as the given build arg name. For example,
+  `IMAGE_ARG_base_image=ubuntu/image.tar` will set `base_image` to a local image
+  reference for using `ubuntu/image.tar`.
 
   This must be accepted as an argument for use; for example:
 
@@ -134,10 +135,10 @@ _(As a convention in the list below, all task parameters are specified with a
   FROM ${base_image}
   ```
 
-* `$IMAGE_PLATFORM`: Specify the target platform to build the image for. For
-  example `IMAGE_PLATFORM=linux/arm64` will build the image for the Linux OS
-  and `arm64` architecture. By default, images will be built for the current
-  worker's platform that the task is running on.
+* `$IMAGE_PLATFORM`: Specify the target platform(s) to build the image for. For
+  example `IMAGE_PLATFORM=linux/arm64,linux/amd64` will build the image for the
+  Linux OS and architectures `arm64` and `amd64`. By default, images will be
+  built for the current worker's platform that the task is running on.
 
 * `$LABEL_*`: params prefixed with `LABEL_` will be set as image labels.
   For example `LABEL_foo=bar`, will set the `foo` label to `bar`.
