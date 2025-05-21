@@ -15,10 +15,12 @@ import (
 	"github.com/google/go-containerregistry/pkg/registry"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/layout"
+	"github.com/google/go-containerregistry/pkg/v1/match"
 	"github.com/google/go-containerregistry/pkg/v1/mutate"
 	"github.com/google/go-containerregistry/pkg/v1/random"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
+	"github.com/google/go-containerregistry/pkg/v1/types"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
@@ -389,6 +391,42 @@ func (s *TaskSuite) TestImageArgs() {
 	}
 }
 
+func (s *TaskSuite) TestImageArgsWithOCIImages() {
+	imagesDir, err := os.MkdirTemp("", "preload-images")
+	s.NoError(err)
+
+	defer os.RemoveAll(imagesDir)
+
+	firstImage := s.randomImageIndex(1024, 2, "linux", "amd64")
+	firstPath := filepath.Join(imagesDir, "first")
+	_, err = layout.Write(firstPath, firstImage)
+	s.NoError(err)
+
+	secondImage := s.randomImageIndex(1024, 2, "linux", "amd64")
+	secondPath := filepath.Join(imagesDir, "second")
+	_, err = layout.Write(secondPath, secondImage)
+	s.NoError(err)
+
+	s.req.Config.ContextDir = "testdata/image-args"
+	s.req.Config.AdditionalTargets = []string{"first"}
+	s.req.Config.ImageArgs = []string{
+		"first_image=" + firstPath,
+		"second_image=" + secondPath,
+	}
+
+	err = os.Mkdir(s.outputPath("first"), 0755)
+	s.NoError(err)
+
+	_, err = s.build()
+	s.NoError(err)
+
+	_, err = tarball.ImageFromPath(s.outputPath("first", "image.tar"), nil)
+	s.NoError(err)
+
+	_, err = tarball.ImageFromPath(s.outputPath("image", "image.tar"), nil)
+	s.NoError(err)
+}
+
 func (s *TaskSuite) TestImageArgsWithUppercaseName() {
 	imagesDir, err := os.MkdirTemp("", "preload-images")
 	s.NoError(err)
@@ -671,6 +709,38 @@ func (s *TaskSuite) randomImage(byteSize, layers int64, os, arch string) v1.Imag
 	s.NoError(err)
 
 	return image
+}
+
+func (s *TaskSuite) randomImageIndex(byteSize, layers int64, os, arch string) v1.ImageIndex {
+	index, err := random.Index(byteSize, layers, 1)
+	s.NoError(err)
+	manifest, err := index.IndexManifest()
+	s.NoError(err)
+
+	var image v1.Image
+	for _, m := range manifest.Manifests {
+		if m.MediaType.IsImage() {
+			image, err = index.Image(m.Digest)
+			s.NoError(err)
+			break
+		}
+	}
+
+	index = mutate.RemoveManifests(index, match.MediaTypes(string(types.OCIManifestSchema1), string(types.DockerManifestSchema2)))
+
+	cf, err := image.ConfigFile()
+	s.NoError(err)
+
+	cf = cf.DeepCopy()
+	cf.OS = os
+	cf.Architecture = arch
+
+	image, err = mutate.ConfigFile(image, cf)
+	s.NoError(err)
+
+	index = mutate.AppendManifests(index, mutate.IndexAddendum{Add: image})
+
+	return index
 }
 
 func TestSuite(t *testing.T) {
