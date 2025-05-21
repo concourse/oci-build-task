@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -euo pipefail
+
 if ! which buildctl >/dev/null || ! which buildkitd >/dev/null; then
   arch="$(uname -m)"
   case "$arch" in
