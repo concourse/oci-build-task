@@ -1,4 +1,5 @@
 # syntax = docker/dockerfile:1.11
+ARG base_image=moby/buildkit:v0.21.1
 
 FROM concourse/golang-builder AS builder
 WORKDIR /src
@@ -10,7 +11,7 @@ ENV CGO_ENABLED=0
 RUN go build -o /assets/task ./cmd/task
 RUN go build -o /assets/build ./cmd/build
 
-FROM moby/buildkit:v0.21.1 AS task
+FROM ${base_image} AS task
 COPY --from=builder /assets/task /usr/bin/
 COPY --from=builder /assets/build /usr/bin/
 COPY bin/setup-cgroups /usr/bin/
