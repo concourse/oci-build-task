@@ -47,21 +47,18 @@ image_resource:
 
 ### `params`
 
-Next, any of the following optional parameters may be specified:
+Any of the following optional parameters may be specified. These are all exposed
+as _environment variables_ to the task, therefore only string values are
+allowed. This is a pain point with re-usable tasks that will ideally be resolved
+by [prototypes](https://github.com/concourse/rfcs/blob/master/037-prototypes/proposal.md).
 
-_(As a convention in the list below, all task parameters are specified with a
- leading `$`, in order to remind their environment variable nature, just like
- shell variables that one would use with the `$VAR` syntax. When specifying
- those in the `params:` YAML dictionary of a task definition though, the
- leading `$` is irrelevant, as readers will notice in the examples below.)_
-
-* `$CONTEXT` (default `.`): the path to the directory to provide as the context
+* `CONTEXT` (default `.`): the path to the directory to provide as the context
   for the build.
 
-* `$DOCKERFILE` (default `$CONTEXT/Dockerfile`): the path to the `Dockerfile`
+* `DOCKERFILE` (default `$CONTEXT/Dockerfile`): the path to the `Dockerfile`
   to build.
 
-* `$BUILDKIT_SSH` your ssh key location that is mounted in your `Dockerfile`. This is
+* `BUILDKIT_SSH` your ssh key location that is mounted in your `Dockerfile`. This is
   generally used for pulling dependencies from private repositories.
 
   For Example. In your `Dockerfile`, you can mount a key as
@@ -77,10 +74,10 @@ _(As a convention in the list below, all task parameters are specified with a
 
   Read more about ssh mount [here](https://docs.docker.com/develop/develop-images/build_enhancements/).
 
-* `$BUILD_ARG_*`: params prefixed with `BUILD_ARG_` will be provided as build
+* `BUILD_ARG_*`: params prefixed with `BUILD_ARG_` will be provided as build
   args. For example `BUILD_ARG_foo=bar`, will set the `foo` build arg as `bar`.
 
-* `$BUILD_ARGS_FILE` (default empty): path to a file containing build args. By
+* `BUILD_ARGS_FILE` (default empty): path to a file containing build args. By
     default the task will assume each line is in the form `foo=bar`, one per
     line. Empty lines are skipped. If the file ends in `yml` or `yaml` it will
     be parsed as a YAML file. The YAML file can only contain string keys and
@@ -104,7 +101,7 @@ _(As a convention in the list below, all task parameters are specified with a
     thing2
   ```
 
-* `$BUILDKIT_SECRET_*`: files with extra secrets which are made available via
+* `BUILDKIT_SECRET_*`: files with extra secrets which are made available via
   `--mount=type=secret,id=...`. See [New Docker Build secret information](https://docs.docker.com/develop/develop-images/build_enhancements/#new-docker-build-secret-information) for more information on build secrets.
 
   For example, running with `BUILDKIT_SECRET_config=my-repo/config` will allow
@@ -114,14 +111,14 @@ _(As a convention in the list below, all task parameters are specified with a
   RUN --mount=type=secret,id=config cat /run/secrets/config
   ```
 
-* `$BUILDKIT_SECRETTEXT_*`: literal text of extra secrets to be made available
+* `BUILDKIT_SECRETTEXT_*`: literal text of extra secrets to be made available
   via the same mechanism described for `$BUILDKIT_SECRET_*` above. The
   difference is that this is easier to use with credential managers:
 
   `BUILDKIT_SECRETTEXT_mysecret=(( mysecret ))` puts the content that
   `(( mysecret ))` expands to in `/run/secrets/mysecret`.
 
-* `$IMAGE_ARG_*`: params prefixed with `IMAGE_ARG_*` point to image tarballs
+* `IMAGE_ARG_*`: params prefixed with `IMAGE_ARG_*` point to image tarballs
   (i.e. `docker save` format) or path to images in OCI layout format, to preload
   so that they do not have to be fetched during the build. An image reference
   will be provided as the given build arg name. For example,
@@ -135,49 +132,46 @@ _(As a convention in the list below, all task parameters are specified with a
   FROM ${base_image}
   ```
 
-* `$IMAGE_PLATFORM`: Specify the target platform(s) to build the image for. For
+* `IMAGE_PLATFORM`: Specify the target platform(s) to build the image for. For
   example `IMAGE_PLATFORM=linux/arm64,linux/amd64` will build the image for the
   Linux OS and architectures `arm64` and `amd64`. By default, images will be
   built for the current worker's platform that the task is running on.
 
-* `$LABEL_*`: params prefixed with `LABEL_` will be set as image labels.
+* `LABEL_*`: params prefixed with `LABEL_` will be set as image labels.
   For example `LABEL_foo=bar`, will set the `foo` label to `bar`.
 
-* `$LABELS_FILE` (default empty): path to a file containing labels in
+* `LABELS_FILE` (default empty): path to a file containing labels in
   the form `foo=bar`, one per line. Empty lines are skipped.
 
-* `$TARGET` (default empty): a target build stage to build, as named with the
+* `TARGET` (default empty): a target build stage to build, as named with the
   `FROM … AS <NAME>` syntax in your `Dockerfile`.
 
-* `$TARGET_FILE` (default empty): path to a file containing the name of the
+* `TARGET_FILE` (default empty): path to a file containing the name of the
   target build stage to build.
 
-* `$ADDITIONAL_TARGETS` (default empty): a comma-separated (`,`) list of
+* `ADDITIONAL_TARGETS` (default empty): a comma-separated (`,`) list of
   additional target build stages to build.
 
-* `$REGISTRY_MIRRORS` (default empty): registry mirrors to use for `docker.io`.
+* `REGISTRY_MIRRORS` (default empty): a comma-separated (`,`) list of registry
+  mirrors to use for `docker.io`. If you need to specify authentication details
+  then consider using `BUILDKIT_EXTRA_CONFIG` instead.
 
-* `$UNPACK_ROOTFS` (default `false`): unpack the image as Concourse's image
+* `UNPACK_ROOTFS` (default `false`): unpack the image as Concourse's image
   format (`rootfs/`, `metadata.json`) for use with the [`image` task step
   option](https://concourse-ci.org/jobs.html#schema.step.task-step.image).
 
-* `$OUTPUT_OCI` (default `false`): outputs an OCI compliant image, allowing
+* `OUTPUT_OCI` (default `false`): outputs an OCI compliant image, allowing
   for multi-arch image builds when setting IMAGE_PLATFORM to
   [multiple platforms](https://docs.docker.com/desktop/extensions-sdk/extensions/multi-arch/).
   The image output format will be a directory when this flag is set to true.
 
-* `$BUILDKIT_ADD_HOSTS` (default empty): extra host definitions for `buildkit`
+* `BUILDKIT_ADD_HOSTS` (default empty): extra host definitions for `buildkit`
   to properly resolve custom hostnames. The value is as comma-separated
   (`,`) list of key-value pairs (using syntax `hostname=ip-address`), each
   defining an IP address for resolving some custom hostname.
 
-* `$BUILDKIT_EXTRA_CONFIG` (default empty): a string written verbatim to builkit's
+* `BUILDKIT_EXTRA_CONFIG` (default empty): a string written verbatim to builkit's
   TOML config file. See [buildkitd.toml](https://docs.docker.com/build/buildkit/toml-configuration/).
-
-> Note: this is the main pain point with reusable tasks - env vars are kind of
-> an awkward way to configure a task. Once the RFC lands these will turn into a
-> JSON structure similar to configuring `params` on a resource, and task params
-> will become `env` instead.
 
 ### `inputs`
 
@@ -193,7 +187,7 @@ inputs:
 ```
 
 Should your build be dependent on multiple inputs, you may want to leave
-`$CONTEXT` as its default (`.`) and set an explicit path to the `$DOCKERFILE`:
+`CONTEXT` as its default (`.`) and set an explicit path to the `DOCKERFILE`:
 
 ```yaml
 params:
