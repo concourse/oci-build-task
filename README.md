@@ -280,6 +280,8 @@ set `image: image`.)
 
 ### `caches`
 
+_NOTE: This appears to not work. See #87 for details. PR's to fix this are welcomed_
+
 Caching can be enabled by caching the `cache` path on the task:
 
 ```yaml
