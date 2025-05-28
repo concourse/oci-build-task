@@ -280,14 +280,15 @@ set `image: image`.)
 
 ### `caches`
 
-_NOTE: This appears to not work. See #87 for details. PR's to fix this are welcomed_
-
 Caching can be enabled by caching the `cache` path on the task:
 
 ```yaml
 caches:
 - path: cache
 ```
+
+This only caches the build layers that Buildkit makes and will only be hit if
+the same worker is used between one build and the next.
 
 NOTE: the contents of `--mount=type=cache` directories are not cached, see https://github.com/concourse/oci-build-task/issues/87
 
