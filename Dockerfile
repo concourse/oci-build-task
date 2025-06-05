@@ -19,10 +19,18 @@ RUN go build -o /assets/build ./cmd/build
 
 FROM ${base_image} AS task
 ARG BUILDKIT_VERSION=0.22.0
-RUN apk --no-cache add "buildkitd=~${BUILDKIT_VERSION}" "buildctl=~${BUILDKIT_VERSION}"
+RUN apk --no-cache add \
+    "buildkitd=~${BUILDKIT_VERSION}" \
+    "buildctl=~${BUILDKIT_VERSION}" \
+    cmd:umount \
+    cmd:mount \
+    cmd:mountpoint
 COPY --from=builder /assets/task /usr/bin/
 COPY --from=builder /assets/build /usr/bin/
 COPY bin/setup-cgroups /usr/bin/
+RUN for cmd in task build buildkitd buildctl mount umount mountpoint setup-cgroups; do \
+    which $cmd >/dev/null || { echo "$cmd binary not found!"; exit 1; }; \
+    done
 ENTRYPOINT ["task"]
 
 FROM task
