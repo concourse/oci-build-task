@@ -1,17 +1,25 @@
-# syntax = docker/dockerfile:1.11
-ARG base_image=moby/buildkit:v0.21.1
+# syntax=docker/dockerfile:1
+ARG base_image=cgr.dev/chainguard/wolfi-base
+ARG builder_image=concourse/golang-builder
 
-FROM concourse/golang-builder AS builder
-WORKDIR /src
-COPY go.mod /src/go.mod
-COPY go.sum /src/go.sum
-RUN --mount=type=cache,target=/root/.cache/go-build go get -d ./...
+ARG BUILDPLATFORM
+FROM --platform=${BUILDPLATFORM} ${builder_image} AS builder
+
+ARG TARGETOS
+ARG TARGETARCH
+ENV GOOS=$TARGETOS
+ENV GOARCH=$TARGETARCH
+
 COPY . /src
+WORKDIR /src
+RUN --mount=type=cache,target=/root/.cache/go-build go mod download
 ENV CGO_ENABLED=0
 RUN go build -o /assets/task ./cmd/task
 RUN go build -o /assets/build ./cmd/build
 
 FROM ${base_image} AS task
+ARG BUILDKIT_VERSION=0.22.0
+RUN apk --no-cache add "buildkitd=~${BUILDKIT_VERSION}" "buildctl=~${BUILDKIT_VERSION}"
 COPY --from=builder /assets/task /usr/bin/
 COPY --from=builder /assets/build /usr/bin/
 COPY bin/setup-cgroups /usr/bin/
