@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env sh
 
 set -e -u
 
@@ -10,13 +10,13 @@ fi
 mkdir -p /sys/fs/cgroup
 mount -t tmpfs -o uid=0,gid=0,mode=0755 cgroup /sys/fs/cgroup
 
-sed -e 1d /proc/cgroups | while read sys hierarchy num enabled; do
+sed -e 1d /proc/cgroups | while read -r sys _ _ enabled; do
   if [ "$enabled" != "1" ]; then
     # subsystem disabled; skip
     continue
   fi
 
-  grouping="$(cat /proc/self/cgroup | cut -d: -f2 | grep "\\<$sys\\>")" || true
+  grouping="$(grep "\\<$sys\\>" /proc/self/cgroup | cut -d: -f2)" || true
   if [ -z "$grouping" ]; then
     # subsystem not mounted anywhere; mount it on its own
     grouping="$sys"
@@ -42,7 +42,7 @@ sed -e 1d /proc/cgroups | while read sys hierarchy num enabled; do
   fi
 done
 
-if [ ! -e /sys/fs/cgroup/systemd ] && [ "$(cat /proc/self/cgroup | grep '^1:name=openrc:' | wc -l)" -eq 0 ]; then
+if [ ! -e /sys/fs/cgroup/systemd ] && [ "$(grep -c '^1:name=openrc:' /proc/self/cgroup)" -eq 0 ]; then
   mkdir /sys/fs/cgroup/systemd
   mount -t cgroup -o none,name=systemd none /sys/fs/cgroup/systemd
 fi
