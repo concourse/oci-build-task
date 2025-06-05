@@ -30,7 +30,15 @@ docker push myuser/oci-build-task
 
 ## running tests
 
-The tests only run on Linux.
+The tests only run on Linux. If your on a non-linux machine, you can use Docker
+to quickly build yourself a dev environment by running the following commands:
+
+```sh
+$ docker run -it -v ".:/src" --privileged cgr.dev/chainguard/wolfi-base
+> cd /src
+> apk add bash curl go
+> ./scripts/setup-buildkit.sh
+```
 
 The tests can be run rootless, though doing so requires `newuidmap` and
 `newgidmap` to be installed:
@@ -42,7 +50,7 @@ apt install uidmap
 Once this is all done, the tests can be run like so:
 
 ```sh
-./scripts/test # repeat as needed
+./scripts/test
 ```
 
 > side note: it would be *super cool* to leverage rootless mode to be able to

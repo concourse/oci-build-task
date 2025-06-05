@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"testing"
 
 	task "github.com/concourse/oci-build-task"
@@ -397,12 +398,12 @@ func (s *TaskSuite) TestImageArgsWithOCIImages() {
 
 	defer os.RemoveAll(imagesDir)
 
-	firstImage := s.randomImageIndex(1024, 2, "linux", "amd64")
+	firstImage := s.randomImageIndex(1024, 2, "linux", runtime.GOARCH)
 	firstPath := filepath.Join(imagesDir, "first")
 	_, err = layout.Write(firstPath, firstImage)
 	s.NoError(err)
 
-	secondImage := s.randomImageIndex(1024, 2, "linux", "amd64")
+	secondImage := s.randomImageIndex(1024, 2, "linux", runtime.GOARCH)
 	secondPath := filepath.Join(imagesDir, "second")
 	_, err = layout.Write(secondPath, secondImage)
 	s.NoError(err)
