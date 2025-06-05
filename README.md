@@ -389,7 +389,7 @@ This repo contains an `example.yml`, which builds the image for the task
 itself:
 
 ```sh
-fly -t dev execute -c example.yml -o image=. -p
+fly -t dev execute -c example.yml -i context=. -o image=. -p
 docker load -i image.tar
 ```
 
