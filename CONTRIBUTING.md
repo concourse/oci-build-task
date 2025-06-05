@@ -59,22 +59,9 @@ Once this is all done, the tests can be run like so:
 
 ## pushing to `concourse/oci-build-task`
 
-This repo is automated using GitHub Actions.
+The pipeline for managing this task is in the [concourse/ci
+repo](https://github.com/concourse/ci/blob/master/pipelines/oci-build-task.yml).
+The pipeline itself is running in our CI here:
+[https://ci.concourse-ci.org/teams/main/pipelines/oci-build-task](https://ci.concourse-ci.org/teams/main/pipelines/oci-build-task)
 
-Why GitHub Actions and not Concourse, you ask? Just 'cause! Figured this was a
-good use case to kick the tires on it, especially since their actions run in
-real VMs, so it eliminates the question of testing containers-in-questions.
-
-Anyhow - whenever commits are pushed to a branch, a new image will be pushed to
-`concourse/oci-build-task:${branchname}`.
-
-So to try out the latest changes, point to `concourse/oci-build-task:master`.
-
-Additionally, for each PR an image will be built and pushed to
-`concourse/oci-build-task:pr${number}`.
-
-## shipping a new version
-
-Shipping is done by creating a new semver tag, i.e. `v1.2.3`, and pushing it.
-The GitHub actions will push to the appropriate semver tags (i.e. `1.2.3`,
-`1.2`, `1`), along with `latest`.
+You can use the `publish-*` jobs to release a new version of the resource.
