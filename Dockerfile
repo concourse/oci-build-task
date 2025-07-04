@@ -17,7 +17,7 @@ ENV CGO_ENABLED=0
 RUN go build -o /assets/task ./cmd/task
 RUN go build -o /assets/build ./cmd/build
 
-ARG BUILDKIT_VERSION=0.22.0
+ARG BUILDKIT_VERSION=0.23.2
 WORKDIR /buildkit
 RUN apk --no-cache add curl
 RUN curl -L "https://github.com/moby/buildkit/releases/download/v${BUILDKIT_VERSION}/buildkit-v${BUILDKIT_VERSION}.linux-${TARGETARCH}.tar.gz" -o buildkit.tar.gz && \
