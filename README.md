@@ -364,25 +364,6 @@ jobs:
 ```
 
 
-## differences from `builder` task
-
-The [`builder` task](https://github.com/concourse/builder-task) was a stepping
-stone that led to the `oci-build` task. It is now deprecated. The transition
-should be relatively smooth, with the following differences:
-
-* The `oci-build` task does not support configuring `$REPOSITORY` or `$TAG`.
-  * for running the image with `docker`, a `digest` file is provided which can
-    be tagged with `docker tag`
-  * for pushing the image, the repository and tag are configured in the
-    [`registry-image`
-    resource](https://github.com/concourse/registry-image-resource)
-* The `oci-build` task has a more efficient caching implementation. By using
-  `buildkit` directly we can make use of its `local` cache exporter/importer,
-  which doesn't require a separate translation step for saving into the task
-  cache.
-* This task is written in Go instead of Bash, and has tests!
-
-
 ## example
 
 This repo contains an `example.yml`, which builds the image for the task
@@ -394,3 +375,28 @@ docker load -i image.tar
 ```
 
 That `-p` at the end is not a typo; it runs the task with elevated privileges.
+
+## Providing Custom CA Certificates
+
+Assuming your custom CA cert is passed in as an input to the oci-build task,
+you can use a task config like this to load your custom CA certificate:
+
+```yaml
+platform: linux
+
+inputs:
+- name: certs
+  path: /var/certs #Absolute path only works on Concourse >=7.5.0
+#..other inputs
+
+outputs:
+- name: image
+
+params:
+  BUILDKIT_EXTRA_CONFIG: |
+    [registry."my-registry.com"]
+      ca=["/var/certs/my-ca.pem"]
+
+run:
+  path: build
+```
