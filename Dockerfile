@@ -25,6 +25,7 @@ RUN curl -L "https://github.com/moby/buildkit/releases/download/v${BUILDKIT_VERS
 
 FROM ${base_image} AS task
 RUN apk --no-cache add \
+    ca-certificates \
     cmd:umount \
     cmd:mount \
     cmd:mountpoint
