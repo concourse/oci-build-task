@@ -4,6 +4,8 @@ A Concourse task for building [OCI
 images](https://github.com/opencontainers/image-spec). Currently uses
 [`buildkit`](http://github.com/moby/buildkit) for building.
 
+[![Build Job Status](https://ci.concourse-ci.org/api/v1/teams/main/pipelines/oci-build-task/jobs/build/badge)](https://ci.concourse-ci.org/teams/main/pipelines/oci-build-task/jobs/build)
+
 A stretch goal of this is to support running without `privileged: true`, though
 it currently still requires it.
 
