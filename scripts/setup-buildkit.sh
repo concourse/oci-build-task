@@ -17,7 +17,10 @@ if ! which buildctl >/dev/null || ! which buildkitd >/dev/null; then
       ;;
   esac
 
-  BUILDKIT_VERSION="0.23.2"
+  if [[ -z "${BUILDKIT_VERSION:-}" ]]; then
+    echo "BUILDKIT_VERSION must be specified"
+    exit 1
+  fi
   BUILDKIT_URL="https://github.com/moby/buildkit/releases/download/v${BUILDKIT_VERSION}/buildkit-v${BUILDKIT_VERSION}.linux-${arch}.tar.gz"
 
   curl -fL "$BUILDKIT_URL" | tar zxf -
