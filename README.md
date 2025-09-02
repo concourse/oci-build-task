@@ -137,7 +137,9 @@ by [prototypes](https://github.com/concourse/rfcs/blob/master/037-prototypes/pro
 * `IMAGE_PLATFORM`: Specify the target platform(s) to build the image for. For
   example `IMAGE_PLATFORM=linux/arm64,linux/amd64` will build the image for the
   Linux OS and architectures `arm64` and `amd64`. By default, images will be
-  built for the current worker's platform that the task is running on.
+  built for the current worker's platform that the task is running on. If
+  multiple platforms are specified, `OUTPUT_OCI` will be set to `true`
+  automatically, resulting in the output being a directory instead of a tarball.
 
 * `LABEL_*`: params prefixed with `LABEL_` will be set as image labels.
   For example `LABEL_foo=bar`, will set the `foo` label to `bar`.
@@ -162,10 +164,11 @@ by [prototypes](https://github.com/concourse/rfcs/blob/master/037-prototypes/pro
   format (`rootfs/`, `metadata.json`) for use with the [`image` task step
   option](https://concourse-ci.org/jobs.html#schema.step.task-step.image).
 
-* `OUTPUT_OCI` (default `false`): outputs an OCI compliant image, allowing
-  for multi-arch image builds when setting IMAGE_PLATFORM to
-  [multiple platforms](https://docs.docker.com/desktop/extensions-sdk/extensions/multi-arch/).
-  The image output format will be a directory when this flag is set to true.
+* `OUTPUT_OCI` (default `false`): outputs an OCI image, allowing for multi-arch
+  image builds when setting `IMAGE_PLATFORM` to [multiple
+  platforms](https://docs.docker.com/desktop/extensions-sdk/extensions/multi-arch/).
+  The image output will be a directory (`image/image`) in OCI Image
+  Layout format when this flag is set to true.
 
 * `BUILDKIT_ADD_HOSTS` (default empty): extra host definitions for `buildkit`
   to properly resolve custom hostnames. The value is as comma-separated
@@ -240,9 +243,13 @@ they can have distinct names.
 
 The output will contain the following files:
 
-* `image.tar`: the OCI image tarball. This tarball can be uploaded to a
-  registry using the [Registry Image
+* `image.tar`: the OCI image tarball. This tarball can be uploaded to a registry
+  using the [Registry Image
   resource](https://github.com/concourse/registry-image-resource#out-push-an-image-up-to-the-registry-under-the-given-tags).
+  Only present if `OUTPUT_OCI` is `false`, which is the default.
+
+* `image/`: a directory containing the OCI image(s) in OCI Image Layout format.
+  Only present if `OUTPUT_OCI` is `true`.
 
 * `digest`: the digest of the OCI config. This file can be used to tag the
   image after it has been loaded with `docker load`, like so:

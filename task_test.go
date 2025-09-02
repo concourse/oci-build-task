@@ -641,7 +641,6 @@ func (s *TaskSuite) TestImagePlatform() {
 func (s *TaskSuite) TestOciImage() {
 	s.req.Config.ContextDir = "testdata/multi-arch"
 	s.req.Config.ImagePlatform = "linux/arm64,linux/amd64"
-	s.req.Config.OutputOCI = true
 
 	_, err := s.build()
 	s.NoError(err)

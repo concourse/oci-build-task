@@ -3,12 +3,13 @@ package task
 import (
 	"encoding/json"
 	"fmt"
-	"gopkg.in/yaml.v3"
 	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"gopkg.in/yaml.v3"
 
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/layout"
@@ -77,9 +78,9 @@ func Build(buildkitd *Buildkitd, outputsDir string, req Request) (Response, erro
 		)
 	}
 
-	if len(req.Config.ImageArgs) > 0 {
+	if len(cfg.ImageArgs) > 0 {
 		imagePaths := map[string]string{}
-		for _, arg := range req.Config.ImageArgs {
+		for _, arg := range cfg.ImageArgs {
 			segs := strings.SplitN(arg, "=", 2)
 			imagePaths[segs[0]] = segs[1]
 		}
@@ -173,9 +174,9 @@ func Build(buildkitd *Buildkitd, outputsDir string, req Request) (Response, erro
 		)
 	}
 
-	if req.Config.ImagePlatform != "" {
+	if cfg.ImagePlatform != "" {
 		buildctlArgs = append(buildctlArgs,
-			"--opt", "platform="+req.Config.ImagePlatform,
+			"--opt", "platform="+cfg.ImagePlatform,
 		)
 	}
 
@@ -208,7 +209,7 @@ func Build(buildkitd *Buildkitd, outputsDir string, req Request) (Response, erro
 		}
 	}
 
-	if req.Config.OutputOCI {
+	if cfg.OutputOCI {
 		err = loadOciImages(imagePaths, req)
 		if err != nil {
 			return Response{}, err
@@ -381,7 +382,7 @@ func sanitize(cfg *Config) error {
 				return errors.Wrap(err, "read build args yaml file")
 			}
 			for key, arg := range buildArgsData {
-				cfg.BuildArgs = append(cfg.BuildArgs, key + "=" + arg)
+				cfg.BuildArgs = append(cfg.BuildArgs, key+"="+arg)
 			}
 		} else {
 			for _, arg := range strings.Split(string(buildArgs), "\n") {
@@ -409,6 +410,13 @@ func sanitize(cfg *Config) error {
 
 			cfg.Labels = append(cfg.Labels, arg)
 		}
+	}
+
+	// When multiple image platforms are targetted for building, we must output
+	// in OCI format. The default "docker" format does not support exporting
+	// multi-platform images
+	if strings.Contains(cfg.ImagePlatform, ",") {
+		cfg.OutputOCI = true
 	}
 
 	return nil
