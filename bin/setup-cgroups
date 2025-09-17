@@ -2,6 +2,11 @@
 
 set -e -u
 
+if [ -f '/sys/fs/cgroup/cgroup.controllers' ]; then
+    # cgroups V2 detected. No sanitization of cgroups required
+    exit 0
+fi
+
 if mountpoint -q /sys/fs/cgroup; then
   # already mounted; skip
   exit 0
