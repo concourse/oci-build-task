@@ -375,7 +375,9 @@ func sanitize(cfg *Config) error {
 			return errors.Wrap(err, "read build args file")
 		}
 
-		if strings.HasSuffix(cfg.BuildArgsFile, ".yml") || strings.HasSuffix(cfg.BuildArgsFile, ".yaml") {
+		if strings.HasSuffix(cfg.BuildArgsFile, ".yml") ||
+			strings.HasSuffix(cfg.BuildArgsFile, ".yaml") ||
+			strings.HasSuffix(cfg.BuildArgsFile, ".json") {
 			var buildArgsData map[string]string
 			err = yaml.Unmarshal(buildArgs, &buildArgsData)
 			if err != nil {
