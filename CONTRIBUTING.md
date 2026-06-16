@@ -37,6 +37,7 @@ to quickly build yourself a dev environment by running the following commands:
 $ docker run -it -v ".:/src" --privileged cgr.dev/chainguard/wolfi-base
 > cd /src
 > apk add bash curl go
+> export BUILDKIT_VERSION="#.#.#"
 > ./scripts/setup-buildkit.sh
 ```
 
@@ -44,7 +45,7 @@ The tests can be run rootless, though doing so requires `newuidmap` and
 `newgidmap` to be installed:
 
 ```sh
-apt install uidmap
+apk add just-newuidmap-newgidmap
 ```
 
 Once this is all done, the tests can be run like so:
